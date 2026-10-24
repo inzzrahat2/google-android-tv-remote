@@ -1,0 +1,162 @@
+<resources>
+    <string name="app_name">TV Remote</string>
+
+    <!-- Navigation -->
+    <string name="nav_remote">Remote</string>
+    <string name="nav_apps">Apps</string>
+    <string name="nav_devices">TVs</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Connection states -->
+    <string name="state_idle">No TV selected</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_reconnecting">Reconnecting…</string>
+    <string name="state_pairing_required">Pairing required</string>
+    <string name="state_disconnected">Disconnected</string>
+    <string name="state_offline">Offline</string>
+    <string name="state_available">Available</string>
+
+    <!-- Errors -->
+    <string name="error_no_network_title">Not on Wi-Fi</string>
+    <string name="error_no_network_body">Connect your phone to the same Wi-Fi network as your TV.</string>
+    <string name="error_permission_title">Local network access needed</string>
+    <string name="error_permission_body">Allow access to devices on your local network so the app can reach your TV.</string>
+    <string name="error_unreachable_title">TV not reachable</string>
+    <string name="error_unreachable_body">Make sure the TV is on and that your phone and TV are connected to the same Wi-Fi network.</string>
+    <string name="error_timeout_title">TV didn\'t respond</string>
+    <string name="error_timeout_body">The TV took too long to answer. It may be asleep or on another network.</string>
+    <string name="error_lost_title">Connection lost</string>
+    <string name="error_lost_body">The TV stopped responding.</string>
+    <string name="error_pairing_title">Pair again</string>
+    <string name="error_pairing_body">The TV no longer accepts this phone. Pair it again to continue.</string>
+    <string name="error_certificate_title">TV identity changed</string>
+    <string name="error_certificate_body">This TV presented a different security certificate than when it was paired. This happens after a TV reset. Pair again if you trust this TV.</string>
+    <string name="error_protocol_title">Communication error</string>
+    <string name="error_protocol_body">The TV sent something unexpected. Try reconnecting.</string>
+    <string name="error_unsupported_title">Not supported</string>
+    <string name="error_unsupported_body">This TV uses a protocol this version of the app does not support.</string>
+    <string name="error_unknown_title">Something went wrong</string>
+    <string name="error_unknown_body">Try reconnecting. If it keeps happening, restart the TV.</string>
+
+    <!-- Common actions -->
+    <string name="action_try_again">Try again</string>
+    <string name="action_change_tv">Change TV</string>
+    <string name="action_pair">Pair</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="action_reconnect">Reconnect</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_forget">Forget</string>
+    <string name="action_favorite">Add to favorites</string>
+    <string name="action_unfavorite">Remove from favorites</string>
+    <string name="action_move_up">Move up</string>
+    <string name="action_move_down">Move down</string>
+    <string name="action_test_connection">Test connection</string>
+    <string name="action_find_tv">Find my TV</string>
+    <string name="action_allow">Allow</string>
+    <string name="action_more">More options</string>
+
+    <!-- Remote -->
+    <string name="remote_no_tv_title">Control your Android TV</string>
+    <string name="remote_no_tv_body">Find a TV on your Wi-Fi network to get started.</string>
+    <string name="remote_reconnecting_attempt">Reconnecting… (attempt %1$d)</string>
+    <string name="remote_switch_tv">Switch TV</string>
+    <string name="remote_power_confirm_title">Send power?</string>
+    <string name="remote_power_confirm_body">The TV may turn off. The app cannot confirm the TV\'s power state.</string>
+    <string name="remote_power_confirm_action">Send</string>
+    <string name="remote_volume">Volume</string>
+    <string name="remote_volume_percent">%1$d%%</string>
+    <string name="remote_muted">Muted</string>
+
+    <!-- Keys (accessibility labels) -->
+    <string name="key_up">Up</string>
+    <string name="key_down">Down</string>
+    <string name="key_left">Left</string>
+    <string name="key_right">Right</string>
+    <string name="key_ok">OK</string>
+    <string name="key_home">Home</string>
+    <string name="key_back">Back</string>
+    <string name="key_menu">Menu</string>
+    <string name="key_recents">Recent apps</string>
+    <string name="key_guide">Guide</string>
+    <string name="key_settings">TV settings</string>
+    <string name="key_assistant">Assistant</string>
+    <string name="key_volume_up">Volume up</string>
+    <string name="key_volume_down">Volume down</string>
+    <string name="key_mute">Mute</string>
+    <string name="key_power">Power</string>
+    <string name="key_play_pause">Play or pause</string>
+    <string name="key_previous">Previous</string>
+    <string name="key_next">Next</string>
+    <string name="key_rewind">Rewind</string>
+    <string name="key_fast_forward">Fast forward</string>
+    <string name="key_stop">Stop</string>
+    <string name="key_channel_up">Channel up</string>
+    <string name="key_channel_down">Channel down</string>
+    <string name="key_input">Input source</string>
+
+    <!-- Devices -->
+    <string name="devices_title">My TVs</string>
+    <string name="devices_empty">No TVs saved yet.</string>
+    <string name="devices_nearby">Nearby TVs</string>
+    <string name="devices_searching">Searching for TVs…</string>
+    <string name="devices_none_found">No new TVs found. Make sure the TV is on and on the same Wi-Fi network.</string>
+    <string name="devices_last_used">Last used %1$s</string>
+    <string name="devices_rename_title">Rename TV</string>
+    <string name="devices_name_label">Name</string>
+    <string name="devices_forget_title">Forget %1$s?</string>
+    <string name="devices_forget_body">The pairing with this TV is removed from this phone. You\'ll need to pair again to use it.</string>
+    <string name="devices_latency">Responded in %1$d ms</string>
+    <string name="devices_latency_unavailable">Connected (latency not measurable)</string>
+
+    <!-- Pairing -->
+    <string name="pairing_title">Pair with %1$s</string>
+    <string name="pairing_starting">Contacting the TV…</string>
+    <string name="pairing_enter_code">Enter the code shown on your TV.</string>
+    <string name="pairing_code_label">Pairing code</string>
+    <string name="pairing_wrong_code">That code didn\'t match. Check the TV and try again.</string>
+    <string name="pairing_verifying">Verifying…</string>
+    <string name="pairing_simulated_hint">Simulated TV shows: %1$s</string>
+    <string name="pairing_failed">Pairing failed</string>
+
+    <!-- Apps -->
+    <string name="apps_title">TV Apps</string>
+    <string name="apps_not_yet">App launching isn\'t available yet. It arrives with the Android TV protocol adapter.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_remote">Remote</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_connection">Connection</string>
+    <string name="settings_section_privacy">Privacy</string>
+    <string name="settings_section_developer">Developer</string>
+    <string name="settings_haptics">Haptic feedback</string>
+    <string name="settings_haptics_off">Off</string>
+    <string name="settings_haptics_light">Light</string>
+    <string name="settings_haptics_medium">Medium</string>
+    <string name="settings_haptics_strong">Strong</string>
+    <string name="settings_key_repeat">Key repeat speed</string>
+    <string name="settings_key_repeat_value">Every %1$d ms</string>
+    <string name="settings_confirm_power">Confirm power button</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_amoled">AMOLED black</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_summary">Use colors from your wallpaper</string>
+    <string name="settings_layout">Remote layout</string>
+    <string name="settings_layout_standard">Standard</string>
+    <string name="settings_layout_minimal">Minimal</string>
+    <string name="settings_layout_full">Full</string>
+    <string name="settings_auto_reconnect">Auto reconnect</string>
+    <string name="settings_auto_reconnect_summary">Reconnect automatically when the TV or Wi-Fi comes back</string>
+    <string name="settings_privacy_body">The app communicates only with TVs on your local network. No remote commands, typed text, clipboard content or voice are uploaded to any server. There is no analytics.</string>
+    <string name="settings_debug">Debug tools</string>
+
+    <!-- Debug -->
+    <string name="debug_title">Remote debug</string>
+</resources>
