@@ -5,11 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -17,6 +24,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -25,13 +35,34 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.techport.tvremote.R
 import com.techport.tvremote.domain.model.HapticStrength
+import com.techport.tvremote.domain.model.RemoteKey
 import com.techport.tvremote.domain.model.RemoteLayout
 import com.techport.tvremote.domain.model.ThemeMode
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, showDebug: Boolean, onOpenDebug: () -> Unit) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    showDebug: Boolean,
+    onOpenDebug: () -> Unit,
+    /** Supplied by the caller once the quick-actions editor is available; null hides the entry. */
+    quickActionsEditor: (@Composable (onDismiss: () -> Unit) -> Unit)? = null,
+) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    var customizing by remember { mutableStateOf(false) }
+    var editingQuickActions by remember { mutableStateOf(false) }
+
+    if (customizing) {
+        CustomizeButtonsDialog(
+            hidden = settings.hiddenKeys,
+            onToggle = { key, visible ->
+                viewModel.update { it.copy(hiddenKeys = if (visible) it.hiddenKeys - key else it.hiddenKeys + key) }
+            },
+            onDismiss = { customizing = false },
+        )
+    }
+    if (editingQuickActions) quickActionsEditor?.invoke { editingQuickActions = false }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
         Section(R.string.settings_section_remote)
@@ -67,6 +98,31 @@ fun SettingsScreen(viewModel: SettingsViewModel, showDebug: Boolean, onOpenDebug
             },
         )
         Toggle(R.string.settings_confirm_power, null, settings.confirmPower) { v -> viewModel.update { it.copy(confirmPower = v) } }
+        Toggle(R.string.settings_gesture_nav, R.string.settings_gesture_nav_summary, settings.gestureNavigation) { v ->
+            viewModel.update { it.copy(gestureNavigation = v) }
+        }
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_touchpad_sensitivity)) },
+            supportingContent = {
+                Slider(
+                    value = settings.touchpadSensitivity,
+                    onValueChange = { v -> viewModel.update { it.copy(touchpadSensitivity = v) } },
+                    valueRange = 0.5f..2f,
+                )
+            },
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_customize_buttons)) },
+            supportingContent = { Text(stringResource(R.string.settings_customize_buttons_summary)) },
+            modifier = Modifier.clickable { customizing = true },
+        )
+        if (quickActionsEditor != null) {
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_quick_actions)) },
+                supportingContent = { Text(stringResource(R.string.settings_quick_actions_summary)) },
+                modifier = Modifier.clickable { editingQuickActions = true },
+            )
+        }
         Choice(
             title = R.string.settings_layout,
             options = RemoteLayout.entries,
@@ -105,6 +161,29 @@ fun SettingsScreen(viewModel: SettingsViewModel, showDebug: Boolean, onOpenDebug
         Section(R.string.settings_section_connection)
         Toggle(R.string.settings_auto_reconnect, R.string.settings_auto_reconnect_summary, settings.autoReconnect) { v ->
             viewModel.update { it.copy(autoReconnect = v) }
+        }
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_timeout)) },
+            supportingContent = {
+                Column {
+                    Text(stringResource(R.string.settings_timeout_value, settings.connectionTimeoutSec))
+                    Slider(
+                        value = settings.connectionTimeoutSec.toFloat(),
+                        onValueChange = { v -> viewModel.update { it.copy(connectionTimeoutSec = v.roundToInt()) } },
+                        valueRange = 4f..20f,
+                        steps = 15,
+                    )
+                }
+            },
+        )
+
+        Section(R.string.settings_section_keyboard)
+        Toggle(R.string.settings_auto_open_keyboard, R.string.settings_auto_open_keyboard_summary, settings.autoOpenKeyboard) { v ->
+            viewModel.update { it.copy(autoOpenKeyboard = v) }
+        }
+        Toggle(R.string.settings_send_on_enter, null, settings.sendOnEnter) { v -> viewModel.update { it.copy(sendOnEnter = v) } }
+        Toggle(R.string.settings_clipboard, R.string.settings_clipboard_summary, settings.clipboardEnabled) { v ->
+            viewModel.update { it.copy(clipboardEnabled = v) }
         }
 
         Section(R.string.settings_section_privacy)
@@ -164,3 +243,40 @@ private fun <T> Choice(title: Int, options: List<T>, selected: T, label: (T) -> 
         },
     )
 }
+
+@Composable
+private fun CustomizeButtonsDialog(
+    hidden: Set<RemoteKey>,
+    onToggle: (RemoteKey, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_customize_buttons)) },
+        text = {
+            Column {
+                HIDEABLE_KEYS.forEach { (key, label) ->
+                    Row(
+                        Modifier.fillMaxWidth().toggleable(value = key !in hidden, onValueChange = { onToggle(key, it) }),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = key !in hidden, onCheckedChange = null)
+                        Text(stringResource(label), modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) } },
+    )
+}
+
+/** Buttons a user may hide. Groups are represented by one key (see RemoteScreen). */
+private val HIDEABLE_KEYS = listOf(
+    RemoteKey.POWER to R.string.key_power,
+    RemoteKey.VOLUME_MUTE to R.string.key_mute,
+    RemoteKey.MEDIA_PLAY_PAUSE to R.string.settings_hide_media,
+    RemoteKey.APP_SWITCH to R.string.key_recents,
+    RemoteKey.MENU to R.string.key_menu,
+    RemoteKey.CHANNEL_UP to R.string.settings_hide_channels,
+    RemoteKey.TV_INPUT to R.string.key_input,
+)

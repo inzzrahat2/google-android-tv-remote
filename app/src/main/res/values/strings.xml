@@ -156,6 +156,24 @@
     <string name="settings_auto_reconnect_summary">Reconnect automatically when the TV or Wi-Fi comes back</string>
     <string name="settings_privacy_body">The app communicates only with TVs on your local network. No remote commands, typed text, clipboard content or voice are uploaded to any server. There is no analytics.</string>
     <string name="settings_debug">Debug tools</string>
+    <string name="settings_gesture_nav">Swipe navigation</string>
+    <string name="settings_gesture_nav_summary">Swipe on the remote to move up, down, left and right</string>
+    <string name="settings_touchpad_sensitivity">Touchpad sensitivity</string>
+    <string name="settings_customize_buttons">Customize remote</string>
+    <string name="settings_customize_buttons_summary">Hide buttons you never use</string>
+    <string name="settings_hide_media">Media controls</string>
+    <string name="settings_hide_channels">Channel buttons</string>
+    <string name="settings_quick_actions">Quick actions</string>
+    <string name="settings_quick_actions_summary">Shortcuts shown above the remote</string>
+    <string name="settings_timeout">Connection timeout</string>
+    <string name="settings_timeout_value">%1$d seconds</string>
+    <string name="settings_section_keyboard">Keyboard</string>
+    <string name="settings_auto_open_keyboard">Open keyboard automatically</string>
+    <string name="settings_auto_open_keyboard_summary">When the TV shows a text field</string>
+    <string name="settings_send_on_enter">Press Enter on the TV after sending</string>
+    <string name="settings_clipboard">Allow Paste to TV</string>
+    <string name="settings_clipboard_summary">Reads your clipboard only when you tap Paste. Nothing is stored or uploaded.</string>
+    <string name="action_done">Done</string>
 
     <!-- Debug -->
     <string name="debug_title">Remote debug</string>

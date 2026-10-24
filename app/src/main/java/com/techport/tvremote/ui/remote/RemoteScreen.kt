@@ -113,7 +113,7 @@ fun RemoteScreen(
             viewModel.onKey(key, action)
         }
     }
-    val controls = RemoteControls(caps, enabled, settings.keyRepeatIntervalMs, settings.remoteLayout, volume, onKey)
+    val controls = RemoteControls(caps, enabled, settings.keyRepeatIntervalMs, settings.remoteLayout, settings.hiddenKeys, volume, onKey)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val landscape = maxWidth > maxHeight && maxWidth >= 560.dp
@@ -121,7 +121,7 @@ fun RemoteScreen(
             DeviceHeader(
                 device = device,
                 state = state,
-                showPower = caps.power,
+                showPower = caps.power && RemoteKey.POWER !in settings.hiddenKeys,
                 powerEnabled = enabled,
                 onSwitch = { switcherOpen = true },
                 onPower = { onKey(RemoteKey.POWER, KeyAction.CLICK) },
@@ -201,6 +201,7 @@ private class RemoteControls(
     val enabled: Boolean,
     val repeatMs: Long,
     val layout: RemoteLayout,
+    val hidden: Set<RemoteKey>,
     val volume: VolumeState?,
     val onKey: (RemoteKey, KeyAction) -> Unit,
 ) {
@@ -220,7 +221,7 @@ private class RemoteControls(
             if (caps.volume) {
                 Key(RemoteKey.VOLUME_DOWN, R.string.key_volume_down, Icons.AutoMirrored.Rounded.VolumeDown, Modifier.weight(1f))
             }
-            if (caps.mute) {
+            if (caps.mute && RemoteKey.VOLUME_MUTE !in hidden) {
                 val muted = volume?.muted == true
                 RemoteKeyButton(
                     key = RemoteKey.VOLUME_MUTE,
@@ -259,17 +260,21 @@ private class RemoteControls(
                 Key(RemoteKey.HOME, R.string.key_home, Icons.Rounded.Home, Modifier.weight(1f))
             }
             if (caps.systemKeys && layout != RemoteLayout.MINIMAL) {
-                Key(RemoteKey.APP_SWITCH, R.string.key_recents, Icons.Rounded.ViewCarousel, Modifier.weight(1f))
-                Key(RemoteKey.MENU, R.string.key_menu, Icons.Rounded.Menu, Modifier.weight(1f))
+                if (RemoteKey.APP_SWITCH !in hidden) {
+                    Key(RemoteKey.APP_SWITCH, R.string.key_recents, Icons.Rounded.ViewCarousel, Modifier.weight(1f))
+                }
+                if (RemoteKey.MENU !in hidden) Key(RemoteKey.MENU, R.string.key_menu, Icons.Rounded.Menu, Modifier.weight(1f))
             }
         }
-        if (layout == RemoteLayout.FULL && (caps.channels || caps.inputSwitching)) {
+        val showChannels = caps.channels && RemoteKey.CHANNEL_UP !in hidden
+        val showInput = caps.inputSwitching && RemoteKey.TV_INPUT !in hidden
+        if (layout == RemoteLayout.FULL && (showChannels || showInput)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (caps.channels) {
+                if (showChannels) {
                     Key(RemoteKey.CHANNEL_DOWN, R.string.key_channel_down, Icons.Rounded.KeyboardArrowDown, Modifier.weight(1f))
                     Key(RemoteKey.CHANNEL_UP, R.string.key_channel_up, Icons.Rounded.KeyboardArrowUp, Modifier.weight(1f))
                 }
-                if (caps.inputSwitching) {
+                if (showInput) {
                     Key(RemoteKey.TV_INPUT, R.string.key_input, Icons.Rounded.Input, Modifier.weight(1f))
                 }
             }
@@ -278,7 +283,7 @@ private class RemoteControls(
 
     @Composable
     fun MediaRow() {
-        if (!caps.mediaControls || layout == RemoteLayout.MINIMAL) return
+        if (!caps.mediaControls || layout == RemoteLayout.MINIMAL || RemoteKey.MEDIA_PLAY_PAUSE in hidden) return
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (layout == RemoteLayout.FULL) {
                 Key(RemoteKey.MEDIA_REWIND, R.string.key_rewind, Icons.Rounded.FastRewind, Modifier.weight(1f))
