@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Haptic feedback on remote buttons. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Voice search: microphone audio is streamed to the TV only while the user holds the voice button. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".TvRemoteApp"
@@ -26,11 +28,53 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Home-screen widgets. Exported so the system's widget host can deliver APPWIDGET_UPDATE. -->
+        <receiver
+            android:name=".widget.RemoteWidgetSmallProvider"
+            android:exported="true"
+            android:label="@string/platform_widget_small_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_remote_small_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.RemoteWidgetLargeProvider"
+            android:exported="true"
+            android:label="@string/platform_widget_large_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_remote_large_info" />
+        </receiver>
+
+        <!-- Widget button presses. Only reached through our own explicit, immutable PendingIntents. -->
+        <receiver
+            android:name=".widget.WidgetActionReceiver"
+            android:exported="false" />
+
+        <!-- Quick Settings tile: opens the remote. Only System UI (holding BIND_QUICK_SETTINGS_TILE) can bind it. -->
+        <service
+            android:name=".service.tile.RemoteTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_remote"
+            android:label="@string/platform_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
