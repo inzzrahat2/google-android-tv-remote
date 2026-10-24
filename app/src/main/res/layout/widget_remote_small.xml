@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RemoteViews layout: only framework views that RemoteViews supports on API 26+. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:id="@+id/widget_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_header_background"
+        android:gravity="center_vertical"
+        android:minHeight="36dp"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_tv"
+            android:tint="#FF8AB4F8" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/app_name"
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/platform_widget_set_up"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:minHeight="40dp"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/widget_btn_home"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button_background"
+            android:contentDescription="@string/key_home"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_home"
+            android:tint="#FFFFFFFF" />
+        <ImageButton
+            android:id="@+id/widget_btn_back"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_button_background"
+            android:contentDescription="@string/key_back"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_back"
+            android:tint="#FFFFFFFF" />
+        <ImageButton
+            android:id="@+id/widget_btn_play_pause"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_button_accent_background"
+            android:contentDescription="@string/key_play_pause"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_play_pause"
+            android:tint="#FF0B1B33" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:minHeight="40dp"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/widget_btn_vol_down"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button_background"
+            android:contentDescription="@string/key_volume_down"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_volume_down"
+            android:tint="#FFFFFFFF" />
+        <ImageButton
+            android:id="@+id/widget_btn_mute"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_button_background"
+            android:contentDescription="@string/key_mute"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_volume_off"
+            android:tint="#FFFFFFFF" />
+        <ImageButton
+            android:id="@+id/widget_btn_vol_up"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_button_background"
+            android:contentDescription="@string/key_volume_up"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_volume_up"
+            android:tint="#FFFFFFFF" />
+    </LinearLayout>
+</LinearLayout>
