@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Apps, touchpad, quick actions and input source strings. "apps_title" lives in strings.xml. -->
+<resources>
+    <!-- Apps -->
+    <string name="apps_add">Add app</string>
+    <string name="apps_search">Search apps</string>
+    <string name="apps_search_clear">Clear search</string>
+    <string name="apps_section_favorites">Favorites</string>
+    <string name="apps_section_recent">Recently used</string>
+    <string name="apps_section_all">All apps</string>
+    <string name="apps_section_results">Results</string>
+    <string name="apps_no_results">No saved apps match \"%1$s\".</string>
+    <string name="apps_empty_title">No apps yet</string>
+    <string name="apps_empty_body">TVs don\'t share their list of installed apps with remotes, so add the apps you use as links. Pick a suggestion below or add your own.</string>
+    <string name="apps_unavailable_not_connected">Connect to a TV to open apps. You can still add and organise your shortcuts.</string>
+    <string name="apps_unavailable_unsupported">This TV doesn\'t accept app links, so apps can\'t be opened from here. You can still organise your shortcuts.</string>
+    <string name="apps_suggestions_title">Suggestions</string>
+    <string name="apps_suggestions_note">These are web links. Each one opens only if your TV has an app that handles it.</string>
+    <string name="apps_suggestion_add">Add %1$s</string>
+    <string name="apps_edit">Edit</string>
+    <string name="apps_delete">Delete</string>
+    <string name="apps_options">Options for %1$s</string>
+    <string name="apps_favorite_badge">Favorite</string>
+    <string name="apps_delete_title">Delete %1$s?</string>
+    <string name="apps_delete_body">The shortcut is removed from this phone. Nothing changes on the TV.</string>
+    <string name="apps_dialog_add_title">Add app</string>
+    <string name="apps_dialog_edit_title">Edit app</string>
+    <string name="apps_field_label">Name</string>
+    <string name="apps_field_link">App link or web address</string>
+    <string name="apps_field_link_placeholder">https://www.youtube.com</string>
+    <string name="apps_link_help">The TV opens this link with whichever app handles it. If no app does, nothing may happen.</string>
+    <string name="apps_error_label_blank">Enter a name.</string>
+    <string name="apps_error_label_long">Use %1$d characters or fewer.</string>
+    <string name="apps_error_link_blank">Enter a link.</string>
+    <string name="apps_error_link_invalid">Enter a full link, including its start, like https://…</string>
+    <string name="apps_error_link_scheme">This kind of link can\'t be opened on a TV.</string>
+
+    <!-- Touchpad -->
+    <string name="touchpad_label">Touchpad</string>
+    <string name="touchpad_hint">Drag to move · Tap for OK · Hold for a long press</string>
+    <string name="touchpad_disabled">Connect to a TV to use the touchpad.</string>
+
+    <!-- Quick actions -->
+    <string name="quickactions_title">Quick actions</string>
+    <string name="quickactions_selected">Selected (%1$d of %2$d)</string>
+    <string name="quickactions_empty">Nothing selected, so the quick bar is hidden.</string>
+    <string name="quickactions_buttons">Buttons</string>
+    <string name="quickactions_apps">Apps</string>
+    <string name="quickactions_no_apps">Add apps on the Apps tab to use them here.</string>
+    <string name="quickactions_remove">Remove %1$s</string>
+    <string name="quickactions_key_search">Search</string>
+    <string name="quickactions_key_info">Info</string>
+    <string name="quickactions_key_captions">Captions</string>
+
+    <!-- Input source -->
+    <string name="inputs_title">Input source</string>
+    <string name="inputs_cycle">Next input</string>
+    <string name="inputs_cycle_body">Same as the Input button on a TV remote</string>
+    <string name="inputs_hdmi">HDMI %1$d</string>
+    <string name="inputs_note">Some TVs ignore these buttons. Whether they work depends on the TV\'s software.</string>
+</resources>
