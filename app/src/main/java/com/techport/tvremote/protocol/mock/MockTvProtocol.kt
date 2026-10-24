@@ -204,7 +204,7 @@ class MockTvSession(
         if (key == RemoteKey.POWER) isOn = !isOn
         if (key == RemoteKey.HOME) _currentApp.value = "com.google.android.tvlauncher"
         if (key == RemoteKey.SEARCH) _textField.value = TvTextField("", "Search")
-        if (key == RemoteKey.DEL) _textField.update { f -> f?.copy(value = f.value.dropLast(1)) }
+        if (key == RemoteKey.DEL) _textField.update { f -> f?.copy(value = f.value.dropLastCodePoint()) }
         if (key == RemoteKey.BACK) _textField.value = null
     }
 
@@ -241,3 +241,6 @@ class MockTvSession(
         closed.complete(null)
     }
 }
+
+private fun String.dropLastCodePoint(): String =
+    if (isEmpty()) this else substring(0, offsetByCodePoints(length, -1))

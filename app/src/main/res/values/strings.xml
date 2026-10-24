@@ -70,6 +70,7 @@
     <string name="remote_volume">Volume</string>
     <string name="remote_volume_percent">%1$d%%</string>
     <string name="remote_muted">Muted</string>
+    <string name="remote_keyboard">Keyboard</string>
 
     <!-- Keys (accessibility labels) -->
     <string name="key_up">Up</string>
@@ -105,6 +106,10 @@
     <string name="devices_searching">Searching for TVs…</string>
     <string name="devices_none_found">No new TVs found. Make sure the TV is on and on the same Wi-Fi network.</string>
     <string name="devices_last_used">Last used %1$s</string>
+    <string name="devices_add_manual">Add TV by IP address</string>
+    <string name="devices_manual_body">Find the IP address on your TV under Settings › Network &amp; Internet.</string>
+    <string name="devices_manual_label">IP address</string>
+    <string name="devices_manual_invalid">That doesn\'t look like a valid IP address or host name.</string>
     <string name="devices_rename_title">Rename TV</string>
     <string name="devices_name_label">Name</string>
     <string name="devices_forget_title">Forget %1$s?</string>
@@ -171,7 +176,7 @@
     <string name="settings_auto_open_keyboard">Open keyboard automatically</string>
     <string name="settings_auto_open_keyboard_summary">When the TV shows a text field</string>
     <string name="settings_send_on_enter">Press Enter on the TV after sending</string>
-    <string name="settings_clipboard">Allow Paste to TV</string>
+    <string name="settings_clipboard">Paste to TV</string>
     <string name="settings_clipboard_summary">Reads your clipboard only when you tap Paste. Nothing is stored or uploaded.</string>
     <string name="action_done">Done</string>
 

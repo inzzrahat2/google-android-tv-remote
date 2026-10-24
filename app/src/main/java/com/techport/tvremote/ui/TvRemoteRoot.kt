@@ -1,5 +1,6 @@
 package com.techport.tvremote.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -19,7 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -44,6 +49,14 @@ import com.techport.tvremote.ui.devices.DevicesViewModel
 import com.techport.tvremote.ui.navigation.AppsRoute
 import com.techport.tvremote.ui.navigation.DebugRoute
 import com.techport.tvremote.ui.navigation.DevicesRoute
+import com.techport.tvremote.ui.navigation.KeyboardRoute
+import com.techport.tvremote.ui.keyboard.KeyboardScreen
+import com.techport.tvremote.ui.keyboard.KeyboardViewModel
+import com.techport.tvremote.ui.keyboard.VoiceButton
+import com.techport.tvremote.ui.keyboard.VoiceViewModel
+import com.techport.tvremote.ui.onboarding.OnboardingScreen
+import com.techport.tvremote.domain.model.ConnectionState
+import kotlinx.coroutines.launch
 import com.techport.tvremote.ui.navigation.RemoteRoute
 import com.techport.tvremote.ui.navigation.SettingsRoute
 import com.techport.tvremote.ui.navigation.TopLevelDestination
@@ -54,25 +67,47 @@ import com.techport.tvremote.ui.settings.SettingsViewModel
 
 @Composable
 fun TvRemoteRoot(container: AppContainer) {
-    val nav = rememberNavController()
     val settings by container.settings.collectAsStateWithLifecycle()
+    val loaded by container.settingsLoaded.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var startOnDevices by rememberSaveable { mutableStateOf(false) }
+
+    // Blank until settings are read, so returning users never see onboarding flash.
+    if (!loaded) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        return
+    }
+    if (!settings.onboardingDone) {
+        fun finish(findTv: Boolean) {
+            startOnDevices = findTv
+            scope.launch { container.settingsRepository.update { it.copy(onboardingDone = true) } }
+        }
+        OnboardingScreen(onFindTv = { finish(true) }, onSkip = { finish(false) })
+        return
+    }
+
+    val nav = rememberNavController()
     val haptics = container.haptics
     val feedback = remember(settings.haptics) { { haptics.click(settings.haptics) } }
+    val entry by nav.currentBackStackEntryAsState()
+    // Full-screen routes manage their own insets (the keyboard screen sits on the IME).
+    val fullScreen = entry?.destination?.hasRoute(KeyboardRoute::class) == true
+    val start: Any = if (startOnDevices) DevicesRoute else RemoteRoute
 
     CompositionLocalProvider(LocalPressFeedback provides feedback) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth >= 600.dp
-            if (wide) {
-                Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+            when {
+                fullScreen -> Box(Modifier.fillMaxSize()) { Destinations(nav, container, start) }
+                wide -> Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                     Rail(nav)
-                    Box(Modifier.weight(1f)) { Destinations(nav, container) }
+                    Box(Modifier.weight(1f)) { Destinations(nav, container, start) }
                 }
-            } else {
-                Scaffold(
+                else -> Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
                     bottomBar = { BottomBar(nav) },
                 ) { padding ->
-                    Box(Modifier.padding(padding)) { Destinations(nav, container) }
+                    Box(Modifier.padding(padding)) { Destinations(nav, container, start) }
                 }
             }
         }
@@ -80,12 +115,37 @@ fun TvRemoteRoot(container: AppContainer) {
 }
 
 @Composable
-private fun Destinations(nav: NavHostController, container: AppContainer) {
+private fun Destinations(nav: NavHostController, container: AppContainer, start: Any) {
     val openDevices = { nav.navigateTopLevel(TopLevelDestination.DEVICES) }
-    NavHost(nav, startDestination = RemoteRoute) {
+    NavHost(nav, startDestination = start) {
         composable<RemoteRoute> {
-            val vm = viewModel { RemoteViewModel(container.connectionManager, container.deviceRepository, container.settings) }
-            RemoteScreen(vm, onOpenDevices = openDevices)
+            val vm = viewModel {
+                RemoteViewModel(container.connectionManager, container.deviceRepository, container.networkMonitor.status, container.settings)
+            }
+            val voiceVm = viewModel { VoiceViewModel(container.connectionManager, container.voiceRecorder) }
+            RemoteScreen(
+                vm,
+                onOpenDevices = openDevices,
+                onOpenKeyboard = { nav.navigate(KeyboardRoute) { launchSingleTop = true } },
+                onOpenApps = { nav.navigateTopLevel(TopLevelDestination.APPS) },
+                voiceButton = { VoiceButton(voiceVm, size = 56.dp) },
+            )
+        }
+        composable<KeyboardRoute> {
+            val vm = viewModel { KeyboardViewModel(container.connectionManager, container.settings, container.clipboardReader) }
+            val voiceVm = viewModel { VoiceViewModel(container.connectionManager, container.voiceRecorder) }
+            val state by container.connectionManager.state.collectAsStateWithLifecycle()
+            val voice = (state as? ConnectionState.Connected)?.capabilities?.voice == true
+            KeyboardScreen(
+                vm,
+                onClose = { nav.popBackStack() },
+                onOpenSettings = { nav.navigateTopLevel(TopLevelDestination.SETTINGS) },
+                voiceButton = if (voice) {
+                    { VoiceButton(voiceVm) }
+                } else {
+                    null
+                },
+            )
         }
         composable<AppsRoute> { AppsScreen() }
         composable<DevicesRoute> {
@@ -96,6 +156,7 @@ private fun Destinations(nav: NavHostController, container: AppContainer) {
                     discovery = container.discovery,
                     protocols = container.protocols,
                     forgetDevice = container::forget,
+                    manualTarget = { host -> container.androidTv.manualTarget(host) },
                     logger = container.logger,
                 )
             }

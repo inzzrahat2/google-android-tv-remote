@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object DevicesRoute
 @Serializable data object SettingsRoute
 @Serializable data object DebugRoute
+@Serializable data object KeyboardRoute
 
 enum class TopLevelDestination(val route: Any, @StringRes val label: Int, val icon: ImageVector) {
     REMOTE(RemoteRoute, R.string.nav_remote, Icons.Rounded.SettingsRemote),

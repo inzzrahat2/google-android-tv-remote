@@ -3,39 +3,44 @@ package com.techport.tvremote
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.techport.tvremote.core.clipboard.AndroidClipboardSource
+import com.techport.tvremote.core.clipboard.ClipboardReader
 import com.techport.tvremote.core.connectivity.NetworkMonitor
 import com.techport.tvremote.core.discovery.DiscoveryService
 import com.techport.tvremote.core.haptics.Haptics
 import com.techport.tvremote.core.logging.AppLogger
+import com.techport.tvremote.core.voice.AudioRecordPcmSourceFactory
+import com.techport.tvremote.core.voice.VoiceRecorder
 import com.techport.tvremote.data.devices.DataStoreDeviceRepository
 import com.techport.tvremote.data.preferences.DataStoreSettingsRepository
 import com.techport.tvremote.domain.model.AppSettings
 import com.techport.tvremote.domain.model.TvDevice
 import com.techport.tvremote.domain.repository.DeviceRepository
 import com.techport.tvremote.domain.repository.SettingsRepository
+import com.techport.tvremote.protocol.androidtv.AndroidTvProtocol
 import com.techport.tvremote.protocol.core.ProtocolRegistry
 import com.techport.tvremote.protocol.core.RemoteProtocol
 import com.techport.tvremote.protocol.mock.MockTvProtocol
 import com.techport.tvremote.service.connection.AutoConnector
+import com.techport.tvremote.service.connection.ConnectionLifecycle
 import com.techport.tvremote.service.connection.ConnectionManager
+import com.techport.tvremote.widget.PlatformHost
+import com.techport.tvremote.widget.RemoteWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /**
  * Hand-wired dependency graph. The graph is small enough that a DI framework would cost
  * more (build time, annotation processing) than it saves.
  */
-class AppContainer(context: Context) {
+class AppContainer(context: Context) : PlatformHost {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,8 +58,15 @@ class AppContainer(context: Context) {
     val settings: StateFlow<AppSettings> =
         settingsRepository.settings.stateIn(appScope, SharingStarted.Eagerly, AppSettings())
 
+    /** False until settings were read from disk; avoids flashing onboarding at cold start. */
+    val settingsLoaded: StateFlow<Boolean> =
+        settingsRepository.settings.map { true }.stateIn(appScope, SharingStarted.Eagerly, false)
+
+    val androidTv = AndroidTvProtocol(context, logger)
+
     val protocols = ProtocolRegistry(
         buildList<RemoteProtocol> {
+            add(androidTv)
             if (BuildConfig.DEBUG) add(MockTvProtocol())
         },
     )
@@ -62,6 +74,8 @@ class AppContainer(context: Context) {
     val discovery = DiscoveryService(protocols)
     val haptics = Haptics(context)
     val networkMonitor = NetworkMonitor(context)
+    val clipboardReader = ClipboardReader(AndroidClipboardSource(context)) { settings.value.clipboardEnabled }
+    val voiceRecorder = VoiceRecorder(AudioRecordPcmSourceFactory(context))
 
     val connectionManager = ConnectionManager(
         scope = connectionScope,
@@ -74,17 +88,27 @@ class AppContainer(context: Context) {
 
     private val autoConnector = AutoConnector(deviceRepository, connectionManager)
 
+    override val connectionLifecycle = ConnectionLifecycle(
+        controller = connectionManager,
+        scope = appScope,
+        networkStatus = networkMonitor.status,
+        onNetworkAvailable = connectionManager::onNetworkAvailable,
+        connectPreferred = autoConnector::connectPreferred,
+        logger = logger,
+    )
+
+    private val widgetUpdater = RemoteWidgetUpdater(context, connectionManager.state, deviceRepository, appScope)
+
+    /**
+     * Main thread (Application.onCreate). The lifecycle auto-connects on first foreground,
+     * disconnects after a grace period in background, and retries on network changes.
+     */
     fun start() {
-        appScope.launch { autoConnector.connectPreferred() }
-        // Wi-Fi came back or changed: retry promptly instead of waiting out backoff.
-        networkMonitor.status
-            .drop(1)
-            .filter { it.isLocalNetworkAvailable }
-            .onEach { connectionManager.onNetworkAvailable() }
-            .launchIn(appScope)
+        connectionLifecycle.start(ProcessLifecycleOwner.get().lifecycle)
+        widgetUpdater.start()
     }
 
-    /** Forgets a device everywhere: session, credentials and saved record. */
+    /** Forgets a device everywhere: session, pinned certificate and saved record. */
     suspend fun forget(device: TvDevice) {
         connectionManager.release(device.id)
         protocols[device.protocolId]?.forget(device)

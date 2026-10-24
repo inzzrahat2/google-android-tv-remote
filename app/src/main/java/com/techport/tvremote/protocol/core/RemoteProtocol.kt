@@ -41,6 +41,10 @@ interface RemoteProtocol {
 }
 
 interface RemoteSession {
+    /** Address actually connected to, when it can differ from the saved one (e.g. after re-resolving). */
+    val connectedHost: String? get() = null
+    val connectedPort: Int? get() = null
+
     val capabilities: StateFlow<RemoteCapabilities>
 
     /** Null until/unless the device reports it. */

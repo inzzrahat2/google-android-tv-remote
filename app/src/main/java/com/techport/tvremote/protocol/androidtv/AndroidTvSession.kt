@@ -58,8 +58,8 @@ class AndroidTvSession internal constructor(
     private val transport: MessageTransport,
     private val logger: AppLogger,
     /** Address this session actually uses; differs from the saved one after an NSD re-resolve. */
-    val connectedHost: String,
-    val connectedPort: Int,
+    override val connectedHost: String,
+    override val connectedPort: Int,
     private val requestedFeatures: Int = DEFAULT_FEATURES,
     private val deviceInfo: DeviceInfo = DeviceInfo(),
     dispatcher: CoroutineDispatcher = Dispatchers.IO,

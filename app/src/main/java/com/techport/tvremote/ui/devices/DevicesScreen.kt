@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -51,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.techport.tvremote.R
@@ -72,6 +74,7 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
     val context = LocalContext.current
 
     var renaming by remember { mutableStateOf<TvDevice?>(null) }
+    var addingManually by remember { mutableStateOf(false) }
     var forgetting by remember { mutableStateOf<TvDevice?>(null) }
     var permissionGranted by remember { mutableStateOf(LocalNetworkPermission.isGranted(context)) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -137,6 +140,13 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
             items(nearby.devices, key = { "nearby-" + it.id }) { device ->
                 NearbyDeviceRow(device, onPair = { viewModel.pair(device) })
             }
+            if (viewModel.supportsManualEntry) {
+                item {
+                    TextButton(onClick = { addingManually = true }, modifier = Modifier.padding(horizontal = 12.dp)) {
+                        Text(stringResource(R.string.devices_add_manual))
+                    }
+                }
+            }
             item {
                 if (nearby.searching) {
                     Row(Modifier.padding(horizontal = 24.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -158,6 +168,13 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
     }
 
     pairing?.let { PairingDialog(it, onSubmit = viewModel::submitCode, onRetry = { viewModel.pair(it.target) }, onDismiss = viewModel::cancelPairing) }
+
+    if (addingManually) {
+        ManualEntryDialog(
+            onDismiss = { addingManually = false },
+            onSubmit = { host -> viewModel.pairManually(host).also { if (it) addingManually = false } },
+        )
+    }
 
     renaming?.let { device ->
         RenameDialog(device, onDismiss = { renaming = null }, onSave = {
@@ -308,6 +325,43 @@ private fun RenameDialog(device: TvDevice, onDismiss: () -> Unit, onSave: (Strin
         },
         confirmButton = {
             TextButton(onClick = { onSave(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
+}
+
+@Composable
+private fun ManualEntryDialog(onDismiss: () -> Unit, onSubmit: (String) -> Boolean) {
+    var host by remember { mutableStateOf("") }
+    var invalid by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.devices_add_manual)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.devices_manual_body), style = MaterialTheme.typography.bodyMedium)
+                OutlinedTextField(
+                    value = host,
+                    onValueChange = {
+                        host = it.trim().take(253)
+                        invalid = false
+                    },
+                    label = { Text(stringResource(R.string.devices_manual_label)) },
+                    singleLine = true,
+                    isError = invalid,
+                    supportingText = if (invalid) {
+                        { Text(stringResource(R.string.devices_manual_invalid)) }
+                    } else {
+                        null
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { invalid = !onSubmit(host) }, enabled = host.isNotBlank()) {
+                Text(stringResource(R.string.action_pair))
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )

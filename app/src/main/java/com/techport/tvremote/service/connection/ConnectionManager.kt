@@ -165,7 +165,8 @@ class ConnectionManager(
         }
     }
 
-    private suspend fun runConnection(device: TvDevice) {
+    private suspend fun runConnection(target: TvDevice) {
+        var device = target
         val protocol = registry[device.protocolId]
         if (protocol == null) {
             logger.e(TAG, "No protocol '${device.protocolId}' for ${device.name}")
@@ -221,6 +222,14 @@ class ConnectionManager(
                 logger.i(TAG, "Retrying ${device.name} in ${wait}ms (attempt $attempt)")
                 withTimeoutOrNull(wait) { wakeUp.first() }
                 continue
+            }
+
+            // The TV may have moved (DHCP); persist where it was actually found.
+            val host = opened.connectedHost ?: device.host
+            val port = opened.connectedPort ?: device.port
+            if (host != device.host || port != device.port) {
+                logger.i(TAG, "${device.name} moved to $host:$port")
+                device = device.copy(host = host, port = port)
             }
 
             val connectMs = clock() - startedAt

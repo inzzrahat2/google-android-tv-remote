@@ -24,6 +24,15 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Keyboard
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalContext
+import com.techport.tvremote.core.connectivity.ConnectionIssues
+import com.techport.tvremote.core.permissions.LocalNetworkPermission
+import com.techport.tvremote.domain.model.RemoteError
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.FastRewind
@@ -86,6 +95,14 @@ import com.techport.tvremote.ui.components.text
 fun RemoteScreen(
     viewModel: RemoteViewModel,
     onOpenDevices: () -> Unit,
+    onOpenKeyboard: () -> Unit,
+    onOpenApps: () -> Unit,
+    /** Hold-to-talk button, rendered only when the TV supports voice. */
+    voiceButton: (@Composable () -> Unit)? = null,
+    /** Extra content above the remote (quick actions bar). */
+    topBar: (@Composable (enabled: Boolean) -> Unit)? = null,
+    /** Wraps the remote area, e.g. with swipe navigation. */
+    gestureModifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val volume by viewModel.volume.collectAsStateWithLifecycle()
@@ -93,6 +110,10 @@ fun RemoteScreen(
     val saved by viewModel.savedDevices.collectAsStateWithLifecycle()
     var switcherOpen by rememberSaveable { mutableStateOf(false) }
     var confirmPower by remember { mutableStateOf(false) }
+    val network by viewModel.network.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val currentOpenKeyboard by rememberUpdatedState(onOpenKeyboard)
+    LaunchedEffect(viewModel) { viewModel.keyboardRequests.collect { currentOpenKeyboard() } }
 
     val device = state.device
     if (device == null) {
@@ -126,10 +147,16 @@ fun RemoteScreen(
                 onSwitch = { switcherOpen = true },
                 onPower = { onKey(RemoteKey.POWER, KeyAction.CLICK) },
             )
-            ConnectionBanner(state, onRetry = viewModel::retry, onChangeTv = onOpenDevices)
+            val issue = ConnectionIssues.uiError(state, network, LocalNetworkPermission.isGranted(context))
+            val otherNetwork = ConnectionIssues.likelyDifferentNetwork(state, network)
+            ConnectionBanner(state, issue, otherNetwork, onRetry = viewModel::retry, onChangeTv = onOpenDevices)
+            topBar?.invoke(enabled)
+            val actions: @Composable () -> Unit = {
+                ActionRow(caps, enabled, onOpenApps, onOpenKeyboard, voiceButton.takeIf { caps.voice && enabled })
+            }
             if (landscape) {
                 Row(
-                    Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp),
+                    Modifier.fillMaxSize().then(gestureModifier).padding(horizontal = 24.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(32.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -141,12 +168,14 @@ fun RemoteScreen(
                         controls.VolumeRow()
                         controls.NavigationRow()
                         controls.MediaRow()
+                        actions()
                     }
                 }
             } else {
                 // One-handed: controls sit toward the bottom, D-pad in the thumb zone.
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
+                    Modifier.fillMaxSize().then(gestureModifier).verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -154,6 +183,7 @@ fun RemoteScreen(
                     controls.DPadArea(Modifier.fillMaxWidth(0.82f).widthIn(max = 320.dp))
                     controls.NavigationRow()
                     controls.MediaRow()
+                    actions()
                 }
             }
         }
@@ -371,7 +401,29 @@ private fun DeviceHeader(
 }
 
 @Composable
-private fun ConnectionBanner(state: ConnectionState, onRetry: () -> Unit, onChangeTv: () -> Unit) {
+private fun ConnectionBanner(
+    state: ConnectionState,
+    issue: RemoteError?,
+    otherNetwork: Boolean,
+    onRetry: () -> Unit,
+    onChangeTv: () -> Unit,
+) {
+    // Phone-side problems (no Wi-Fi, permission) explain more than the TV-side symptom.
+    if (issue == RemoteError.NO_NETWORK || issue == RemoteError.LOCAL_NETWORK_PERMISSION) {
+        val text = issue.text()
+        ErrorBanner(text.title, text.body, R.string.action_try_again, onRetry, onChangeTv)
+        return
+    }
+    if (otherNetwork) {
+        ErrorBanner(
+            R.string.platform_error_other_network_title,
+            R.string.platform_error_other_network_body,
+            R.string.action_try_again,
+            onRetry,
+            onChangeTv,
+        )
+        return
+    }
     when (state) {
         is ConnectionState.Connecting -> ProgressBanner(stringResource(R.string.state_connecting))
         is ConnectionState.Reconnecting ->
@@ -390,6 +442,38 @@ private fun ConnectionBanner(state: ConnectionState, onRetry: () -> Unit, onChan
             )
         }
         else -> Unit
+    }
+}
+
+@Composable
+private fun ActionRow(
+    caps: RemoteCapabilities,
+    enabled: Boolean,
+    onOpenApps: () -> Unit,
+    onOpenKeyboard: () -> Unit,
+    voiceButton: (@Composable () -> Unit)?,
+) {
+    if (!caps.appLaunch && !caps.keyboard && voiceButton == null) return
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (caps.appLaunch) {
+            FilledTonalButton(onClick = onOpenApps, enabled = enabled, modifier = Modifier.weight(1f).height(56.dp)) {
+                Icon(Icons.Rounded.Apps, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.nav_apps))
+            }
+        }
+        if (caps.keyboard) {
+            FilledTonalButton(onClick = onOpenKeyboard, enabled = enabled, modifier = Modifier.weight(1f).height(56.dp)) {
+                Icon(Icons.Rounded.Keyboard, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.remote_keyboard))
+            }
+        }
+        voiceButton?.invoke()
     }
 }
 

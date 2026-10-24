@@ -41,6 +41,8 @@ class DevicesViewModel(
     private val protocols: ProtocolRegistry,
     private val forgetDevice: suspend (TvDevice) -> Unit,
     private val logger: AppLogger,
+    /** Builds a pairing target from a typed IP/host name; throws IllegalArgumentException if invalid. */
+    private val manualTarget: ((String) -> DiscoveredDevice)? = null,
 ) : ViewModel() {
 
     val saved: StateFlow<List<TvDevice>> =
@@ -107,6 +109,15 @@ class DevicesViewModel(
             }
             guard(session) { session.start() }
         }
+    }
+
+    val supportsManualEntry: Boolean get() = manualTarget != null
+
+    /** Returns false if [host] is not a valid address. */
+    fun pairManually(host: String): Boolean {
+        val target = runCatching { manualTarget?.invoke(host.trim()) }.getOrNull() ?: return false
+        pair(target)
+        return true
     }
 
     fun pairAgain(device: TvDevice) = pair(

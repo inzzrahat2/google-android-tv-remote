@@ -24,7 +24,8 @@ data class AppSettings(
 
     // Connection
     val autoReconnect: Boolean = true,
-    val connectionTimeoutSec: Int = 8,
+    /** Covers TCP + TLS + a possible NSD re-resolve of a TV whose address changed. */
+    val connectionTimeoutSec: Int = 12,
 
     // Keyboard
     /** Open the keyboard automatically when the TV focuses a text field. */
