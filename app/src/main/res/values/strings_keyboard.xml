@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Keyboard screen -->
+    <string name="keyboard_title">Type on TV</string>
+    <string name="keyboard_close">Close keyboard</string>
+    <string name="keyboard_placeholder">Type here…</string>
+    <string name="keyboard_field_hint">Text appears on the TV as you type.</string>
+    <string name="keyboard_not_connected_title">Not connected</string>
+    <string name="keyboard_not_connected_body">Connect to a TV to type on it.</string>
+    <string name="keyboard_unsupported_title">Typing isn\'t available</string>
+    <string name="keyboard_unsupported_body">This TV doesn\'t accept text from the app. Use the remote\'s arrows to pick letters on the TV\'s own keyboard.</string>
+
+    <!-- Toolbar -->
+    <string name="keyboard_backspace">Backspace</string>
+    <string name="keyboard_space">Space</string>
+    <string name="keyboard_cursor_left">Move cursor left</string>
+    <string name="keyboard_cursor_right">Move cursor right</string>
+    <string name="keyboard_escape">Esc</string>
+    <string name="keyboard_escape_description">Escape: close the TV keyboard</string>
+    <string name="keyboard_enter">Enter</string>
+    <string name="keyboard_send">Send</string>
+    <string name="keyboard_clear">Clear</string>
+    <string name="keyboard_paste">Paste to TV</string>
+
+    <!-- Clipboard -->
+    <string name="keyboard_clipboard_disabled">Paste to TV is off. Turn on “Paste to TV” in Settings › Keyboard. The clipboard is read only when you tap Paste.</string>
+    <string name="keyboard_clipboard_empty">There\'s no text on the clipboard.</string>
+    <string name="keyboard_clipboard_truncated">Only the first 1,000 characters were pasted.</string>
+    <string name="keyboard_open_settings">Settings</string>
+
+    <!-- Voice -->
+    <string name="keyboard_voice_hold">Hold to speak</string>
+    <string name="keyboard_voice_description">Voice search. Hold to speak, or tap to start and tap again to send.</string>
+    <string name="keyboard_voice_starting">Connecting…</string>
+    <string name="keyboard_voice_listening">Listening…</string>
+    <string name="keyboard_voice_listening_tap">Listening… tap to send</string>
+    <string name="keyboard_voice_finishing">Sending…</string>
+    <string name="keyboard_voice_unsupported">Voice isn\'t supported by this TV.</string>
+    <string name="keyboard_voice_no_permission">Voice needs microphone access. You can allow it in the phone\'s app settings.</string>
+    <string name="keyboard_voice_mic_unavailable">The microphone is in use by another app.</string>
+    <string name="keyboard_voice_mic_failed">The microphone stopped. What you said so far was sent.</string>
+    <string name="keyboard_voice_failed">Couldn\'t send your voice to the TV. Try again.</string>
+    <string name="keyboard_voice_rationale_title">Use the microphone?</string>
+    <string name="keyboard_voice_rationale_body">Your voice is streamed straight to your TV only while you hold the button. Nothing is recorded or stored on the phone.</string>
+    <string name="keyboard_voice_rationale_continue">Continue</string>
+    <string name="keyboard_voice_rationale_cancel">Not now</string>
+</resources>
