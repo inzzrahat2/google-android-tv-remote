@@ -71,6 +71,8 @@
     <string name="remote_volume_percent">%1$d%%</string>
     <string name="remote_muted">Muted</string>
     <string name="remote_keyboard">Keyboard</string>
+    <string name="remote_mode_dpad">D-pad</string>
+    <string name="remote_mode_touchpad">Touchpad</string>
 
     <!-- Keys (accessibility labels) -->
     <string name="key_up">Up</string>
@@ -129,7 +131,6 @@
 
     <!-- Apps -->
     <string name="apps_title">TV Apps</string>
-    <string name="apps_not_yet">App launching isn\'t available yet. It arrives with the Android TV protocol adapter.</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

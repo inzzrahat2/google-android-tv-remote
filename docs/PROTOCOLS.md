@@ -5,7 +5,7 @@
 | Protocol | Adapter | Status |
 |---|---|---|
 | Simulated TV (`mock`) | `protocol/mock` | Done. Debug builds only. No network. |
-| Android TV Remote Service v2 (`androidtv`) | `protocol/androidtv` | Planned for Phase 3 |
+| Android TV Remote Service v2 (`androidtv`) | `protocol/androidtv` | Implemented and unit-tested against the reference behaviour. **Needs real-device verification.** |
 
 ## Android TV Remote Service v2
 
@@ -76,3 +76,12 @@ Feature bits: PING=1, KEY=2, IME=4, VOICE=8, POWER=32, VOLUME=64, APP_LINK=512.
 ## Adding a protocol
 Implement `RemoteProtocol` (with discovery, pairing and session), give it a permanent `id`,
 and register it in `AppContainer.protocols`. Nothing in `ui/` or `service/` changes.
+
+## Implementation notes (androidtv adapter)
+- Hand-written protobuf codec (`wire/`). There is no protobuf dependency, and only the messages above are modelled.
+- Device ids: `atv:bt:<mac>` (from the mDNS TXT `bt` record), else `atv:name:<service name>`; manual entries use `atv:host:<host>`.
+  Ids based on the service name change if the TV is renamed, which means pairing again.
+- If the saved address stops answering, the session tries a ≤3 s NSD re-resolve by id. `ConnectionManager` then saves the new address.
+- The client certificate is always presented (a custom key manager), as the reference client does.
+- `measureLatency()` returns null: the protocol has no known client-started round trip.
+- Hiding the TV text field is heuristic: no documented "field closed" message exists.

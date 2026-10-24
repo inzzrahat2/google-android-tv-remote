@@ -8,11 +8,13 @@
 - **Client identity:** an RSA key pair generated in the **Android Keystore**. The private key is never exportable and never leaves the phone. Its self-signed certificate is presented to the TV during TLS client authentication.
 - **TV identity:** the TV's certificate is pinned (by SHA-256 fingerprint) at pairing time, trust-on-first-use. A later mismatch produces `CERTIFICATE_CHANGED` → the app asks the user to pair again. It never falls back to an unpinned connection silently.
 - **Pairing codes** exist only in the dialog's in-memory state and are used once to compute the secret. They are never stored or logged.
-- **Forgetting a TV** deletes its pinned fingerprint, its key alias and its saved record.
+- **Forgetting a TV** deletes its pinned fingerprint and its saved record. The client key is one app-wide identity (alias `atv_remote_client`) shared by all TVs, so it is kept.
 - `allowBackup=false` and data-extraction rules exclude everything, so credentials cannot be copied to another device through backup.
 
 ## Data handling
 - No backend, no analytics, no crash reporting.
+- **Clipboard** is read only when the user taps *Paste to TV*, and only if they turned it on in Settings. There is deliberately no clipboard history, because it would retain passwords and one-time codes.
+- **Voice** audio is streamed straight to the TV and never stored. Recording stops after 15 s.
 - Logs (an in-memory ring buffer, plus logcat in debug builds only) never contain pairing codes, keys, typed text, clipboard contents or voice audio. `RemoteCommand.Text.toString()` prints only the text's length.
 - Network input is parsed defensively. Malformed frames close the session; they do not crash the app.
 

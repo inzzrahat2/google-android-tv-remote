@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.techport.tvremote.core.connectivity.NetworkStatus
 import com.techport.tvremote.domain.model.AppSettings
+import com.techport.tvremote.domain.model.AppShortcut
 import com.techport.tvremote.domain.model.ConnectionState
 import com.techport.tvremote.domain.model.KeyAction
 import com.techport.tvremote.domain.model.RemoteCommand
@@ -12,18 +13,24 @@ import com.techport.tvremote.domain.model.TvDevice
 import com.techport.tvremote.domain.model.TvTextField
 import com.techport.tvremote.domain.model.VolumeState
 import com.techport.tvremote.domain.remote.RemoteController
+import com.techport.tvremote.domain.repository.AppShortcutRepository
 import com.techport.tvremote.domain.repository.DeviceRepository
 import com.techport.tvremote.ui.keyboard.keyboardOpenRequests
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class RemoteViewModel(
     private val controller: RemoteController,
     devices: DeviceRepository,
     networkStatus: Flow<NetworkStatus>,
     val settings: StateFlow<AppSettings>,
+    /** For the quick actions bar. */
+    val shortcuts: StateFlow<List<AppShortcut>>,
+    private val shortcutRepository: AppShortcutRepository,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
     val state: StateFlow<ConnectionState> = controller.state
@@ -41,7 +48,10 @@ class RemoteViewModel(
 
     fun onKey(key: RemoteKey, action: KeyAction) = controller.send(RemoteCommand.Key(key, action))
 
-    fun launch(link: String) = controller.send(RemoteCommand.LaunchApp(link))
+    fun launch(shortcut: AppShortcut) {
+        controller.send(RemoteCommand.LaunchApp(shortcut.link))
+        viewModelScope.launch { shortcutRepository.markUsed(shortcut.id, clock()) }
+    }
 
     fun switchTo(device: TvDevice) = controller.connect(device)
 

@@ -12,10 +12,13 @@ import com.techport.tvremote.core.haptics.Haptics
 import com.techport.tvremote.core.logging.AppLogger
 import com.techport.tvremote.core.voice.AudioRecordPcmSourceFactory
 import com.techport.tvremote.core.voice.VoiceRecorder
+import com.techport.tvremote.data.apps.DataStoreAppShortcutRepository
 import com.techport.tvremote.data.devices.DataStoreDeviceRepository
 import com.techport.tvremote.data.preferences.DataStoreSettingsRepository
 import com.techport.tvremote.domain.model.AppSettings
+import com.techport.tvremote.domain.model.AppShortcut
 import com.techport.tvremote.domain.model.TvDevice
+import com.techport.tvremote.domain.repository.AppShortcutRepository
 import com.techport.tvremote.domain.repository.DeviceRepository
 import com.techport.tvremote.domain.repository.SettingsRepository
 import com.techport.tvremote.protocol.androidtv.AndroidTvProtocol
@@ -54,9 +57,13 @@ class AppContainer(context: Context) : PlatformHost {
 
     val settingsRepository: SettingsRepository = DataStoreSettingsRepository(dataStore)
     val deviceRepository: DeviceRepository = DataStoreDeviceRepository(dataStore)
+    val appShortcutRepository: AppShortcutRepository = DataStoreAppShortcutRepository(dataStore)
 
     val settings: StateFlow<AppSettings> =
         settingsRepository.settings.stateIn(appScope, SharingStarted.Eagerly, AppSettings())
+
+    val appShortcuts: StateFlow<List<AppShortcut>> =
+        appShortcutRepository.shortcuts.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 
     /** False until settings were read from disk; avoids flashing onboarding at cold start. */
     val settingsLoaded: StateFlow<Boolean> =

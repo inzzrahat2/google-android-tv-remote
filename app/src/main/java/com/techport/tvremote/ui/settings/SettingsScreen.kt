@@ -86,9 +86,9 @@ fun SettingsScreen(
                 Column {
                     Text(stringResource(R.string.settings_key_repeat_value, settings.keyRepeatIntervalMs.toInt()))
                     // Lower interval = faster repeat; the slider is inverted so right means faster.
-                    Slider(
+                    CommitSlider(
                         value = (MAX_REPEAT_MS + MIN_REPEAT_MS - settings.keyRepeatIntervalMs).toFloat(),
-                        onValueChange = { v ->
+                        onCommit = { v ->
                             val interval = MAX_REPEAT_MS + MIN_REPEAT_MS - v.roundToLong()
                             viewModel.update { it.copy(keyRepeatIntervalMs = interval) }
                         },
@@ -104,9 +104,9 @@ fun SettingsScreen(
         ListItem(
             headlineContent = { Text(stringResource(R.string.settings_touchpad_sensitivity)) },
             supportingContent = {
-                Slider(
+                CommitSlider(
                     value = settings.touchpadSensitivity,
-                    onValueChange = { v -> viewModel.update { it.copy(touchpadSensitivity = v) } },
+                    onCommit = { v -> viewModel.update { it.copy(touchpadSensitivity = v) } },
                     valueRange = 0.5f..2f,
                 )
             },
@@ -167,9 +167,9 @@ fun SettingsScreen(
             supportingContent = {
                 Column {
                     Text(stringResource(R.string.settings_timeout_value, settings.connectionTimeoutSec))
-                    Slider(
+                    CommitSlider(
                         value = settings.connectionTimeoutSec.toFloat(),
-                        onValueChange = { v -> viewModel.update { it.copy(connectionTimeoutSec = v.roundToInt()) } },
+                        onCommit = { v -> viewModel.update { it.copy(connectionTimeoutSec = v.roundToInt()) } },
                         valueRange = 4f..20f,
                         steps = 15,
                     )
@@ -280,3 +280,24 @@ private val HIDEABLE_KEYS = listOf(
     RemoteKey.CHANNEL_UP to R.string.settings_hide_channels,
     RemoteKey.TV_INPUT to R.string.key_input,
 )
+
+/** Tracks the drag locally and persists once on release, instead of a DataStore write per frame. */
+@Composable
+private fun CommitSlider(
+    value: Float,
+    onCommit: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int = 0,
+) {
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    Slider(
+        value = dragging ?: value,
+        onValueChange = { dragging = it },
+        onValueChangeFinished = {
+            dragging?.let(onCommit)
+            dragging = null
+        },
+        valueRange = valueRange,
+        steps = steps,
+    )
+}

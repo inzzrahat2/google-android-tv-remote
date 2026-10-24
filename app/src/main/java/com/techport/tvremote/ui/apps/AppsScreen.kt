@@ -182,23 +182,6 @@ fun AppsScreen(viewModel: AppsViewModel) {
     }
 }
 
-/**
- * Old placeholder entry point, kept only so the navigation graph compiles until it passes an
- * [AppsViewModel]. Remove once TvRemoteRoot calls `AppsScreen(viewModel)`.
- */
-@Deprecated("Use AppsScreen(viewModel)", ReplaceWith("AppsScreen(viewModel)"))
-@Composable
-fun AppsScreen() {
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.apps_title), style = MaterialTheme.typography.titleLarge)
-        Text(
-            stringResource(R.string.apps_not_yet),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
 /** Null [shortcut] = adding a new one. */
 private data class EditTarget(val shortcut: AppShortcut?)
 

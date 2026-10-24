@@ -24,6 +24,13 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material3.FilterChip
+import com.techport.tvremote.ui.inputs.InputsSheet
+import com.techport.tvremote.ui.quickactions.QuickActionsBar
+import com.techport.tvremote.ui.touchpad.TouchpadScreen
+import com.techport.tvremote.ui.touchpad.swipeNavigation
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material3.FilledTonalButton
@@ -99,10 +106,6 @@ fun RemoteScreen(
     onOpenApps: () -> Unit,
     /** Hold-to-talk button, rendered only when the TV supports voice. */
     voiceButton: (@Composable () -> Unit)? = null,
-    /** Extra content above the remote (quick actions bar). */
-    topBar: (@Composable (enabled: Boolean) -> Unit)? = null,
-    /** Wraps the remote area, e.g. with swipe navigation. */
-    gestureModifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val volume by viewModel.volume.collectAsStateWithLifecycle()
@@ -111,6 +114,9 @@ fun RemoteScreen(
     var switcherOpen by rememberSaveable { mutableStateOf(false) }
     var confirmPower by remember { mutableStateOf(false) }
     val network by viewModel.network.collectAsStateWithLifecycle()
+    val shortcuts by viewModel.shortcuts.collectAsStateWithLifecycle()
+    var touchpadMode by rememberSaveable { mutableStateOf(false) }
+    var inputsOpen by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val currentOpenKeyboard by rememberUpdatedState(onOpenKeyboard)
     LaunchedEffect(viewModel) { viewModel.keyboardRequests.collect { currentOpenKeyboard() } }
@@ -134,9 +140,24 @@ fun RemoteScreen(
             viewModel.onKey(key, action)
         }
     }
-    val controls = RemoteControls(caps, enabled, settings.keyRepeatIntervalMs, settings.remoteLayout, settings.hiddenKeys, volume, onKey)
+    val controls = RemoteControls(
+        caps, enabled, settings.keyRepeatIntervalMs, settings.remoteLayout, settings.hiddenKeys, volume, onKey,
+        onOpenInputs = { inputsOpen = true },
+    )
+    val pointerArea: @Composable (Modifier) -> Unit = { modifier ->
+        if (touchpadMode && caps.dpad) {
+            TouchpadScreen(onKey, settings.touchpadSensitivity, enabled, modifier, showNavigation = false)
+        } else {
+            controls.DPadArea(modifier)
+        }
+    }
+    // Vertical swipes inside the scrolling column go to the scroll; horizontal ones always work.
+    val swipe = Modifier.swipeNavigation(
+        enabled = settings.gestureNavigation && enabled && caps.dpad && !touchpadMode,
+        onKey = onKey,
+    )
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().then(swipe)) {
         val landscape = maxWidth > maxHeight && maxWidth >= 560.dp
         Column(Modifier.fillMaxSize()) {
             DeviceHeader(
@@ -150,17 +171,32 @@ fun RemoteScreen(
             val issue = ConnectionIssues.uiError(state, network, LocalNetworkPermission.isGranted(context))
             val otherNetwork = ConnectionIssues.likelyDifferentNetwork(state, network)
             ConnectionBanner(state, issue, otherNetwork, onRetry = viewModel::retry, onChangeTv = onOpenDevices)
-            topBar?.invoke(enabled)
+            QuickActionsBar(
+                actions = settings.quickActions,
+                shortcuts = shortcuts,
+                enabled = enabled,
+                onKey = onKey,
+                onLaunch = viewModel::launch,
+                isKeySupported = caps::supports,
+                appLaunchEnabled = caps.appLaunch,
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (caps.dpad) {
+                PointerModeToggle(touchpadMode, onToggle = { touchpadMode = it })
+            }
             val actions: @Composable () -> Unit = {
                 ActionRow(caps, enabled, onOpenApps, onOpenKeyboard, voiceButton.takeIf { caps.voice && enabled })
             }
             if (landscape) {
                 Row(
-                    Modifier.fillMaxSize().then(gestureModifier).padding(horizontal = 24.dp, vertical = 8.dp),
+                    Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(32.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { controls.DPadArea(Modifier.widthIn(max = 300.dp)) }
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                        pointerArea(if (touchpadMode) Modifier.fillMaxSize() else Modifier.widthIn(max = 300.dp))
+                    }
                     Column(
                         Modifier.weight(1f).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -174,13 +210,19 @@ fun RemoteScreen(
             } else {
                 // One-handed: controls sit toward the bottom, D-pad in the thumb zone.
                 Column(
-                    Modifier.fillMaxSize().then(gestureModifier).verticalScroll(rememberScrollState())
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     controls.VolumeRow()
-                    controls.DPadArea(Modifier.fillMaxWidth(0.82f).widthIn(max = 320.dp))
+                    pointerArea(
+                        if (touchpadMode) {
+                            Modifier.fillMaxWidth().height(340.dp)
+                        } else {
+                            Modifier.fillMaxWidth(0.82f).widthIn(max = 320.dp)
+                        },
+                    )
                     controls.NavigationRow()
                     controls.MediaRow()
                     actions()
@@ -204,6 +246,8 @@ fun RemoteScreen(
             onDismiss = { switcherOpen = false },
         )
     }
+
+    if (inputsOpen) InputsSheet(onKey = onKey, onDismiss = { inputsOpen = false })
 
     if (confirmPower) {
         AlertDialog(
@@ -234,6 +278,7 @@ private class RemoteControls(
     val hidden: Set<RemoteKey>,
     val volume: VolumeState?,
     val onKey: (RemoteKey, KeyAction) -> Unit,
+    val onOpenInputs: () -> Unit,
 ) {
     @Composable
     fun DPadArea(modifier: Modifier) {
@@ -305,7 +350,13 @@ private class RemoteControls(
                     Key(RemoteKey.CHANNEL_UP, R.string.key_channel_up, Icons.Rounded.KeyboardArrowUp, Modifier.weight(1f))
                 }
                 if (showInput) {
-                    Key(RemoteKey.TV_INPUT, R.string.key_input, Icons.Rounded.Input, Modifier.weight(1f))
+                    FilledTonalButton(
+                        onClick = onOpenInputs,
+                        enabled = enabled,
+                        modifier = Modifier.weight(1f).height(56.dp),
+                    ) {
+                        Icon(Icons.Rounded.Input, contentDescription = stringResource(R.string.key_input))
+                    }
                 }
             }
         }
@@ -442,6 +493,25 @@ private fun ConnectionBanner(
             )
         }
         else -> Unit
+    }
+}
+
+@Composable
+private fun PointerModeToggle(touchpad: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+    ) {
+        FilterChip(
+            selected = !touchpad,
+            onClick = { onToggle(false) },
+            label = { Text(stringResource(R.string.remote_mode_dpad)) },
+        )
+        FilterChip(
+            selected = touchpad,
+            onClick = { onToggle(true) },
+            label = { Text(stringResource(R.string.remote_mode_touchpad)) },
+        )
     }
 }
 

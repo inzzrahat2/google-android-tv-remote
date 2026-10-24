@@ -41,6 +41,8 @@ import androidx.navigation.compose.rememberNavController
 import com.techport.tvremote.AppContainer
 import com.techport.tvremote.BuildConfig
 import com.techport.tvremote.ui.apps.AppsScreen
+import com.techport.tvremote.ui.apps.AppsViewModel
+import com.techport.tvremote.ui.quickactions.QuickActionsEditor
 import com.techport.tvremote.ui.components.LocalPressFeedback
 import com.techport.tvremote.ui.debug.DebugScreen
 import com.techport.tvremote.ui.debug.DebugViewModel
@@ -120,7 +122,14 @@ private fun Destinations(nav: NavHostController, container: AppContainer, start:
     NavHost(nav, startDestination = start) {
         composable<RemoteRoute> {
             val vm = viewModel {
-                RemoteViewModel(container.connectionManager, container.deviceRepository, container.networkMonitor.status, container.settings)
+                RemoteViewModel(
+                    controller = container.connectionManager,
+                    devices = container.deviceRepository,
+                    networkStatus = container.networkMonitor.status,
+                    settings = container.settings,
+                    shortcuts = container.appShortcuts,
+                    shortcutRepository = container.appShortcutRepository,
+                )
             }
             val voiceVm = viewModel { VoiceViewModel(container.connectionManager, container.voiceRecorder) }
             RemoteScreen(
@@ -147,7 +156,10 @@ private fun Destinations(nav: NavHostController, container: AppContainer, start:
                 },
             )
         }
-        composable<AppsRoute> { AppsScreen() }
+        composable<AppsRoute> {
+            val vm = viewModel { AppsViewModel(container.appShortcutRepository, container.connectionManager) }
+            AppsScreen(vm)
+        }
         composable<DevicesRoute> {
             val vm = viewModel {
                 DevicesViewModel(
@@ -164,7 +176,24 @@ private fun Destinations(nav: NavHostController, container: AppContainer, start:
         }
         composable<SettingsRoute> {
             val vm = viewModel { SettingsViewModel(container.settingsRepository, container.settings) }
-            SettingsScreen(vm, showDebug = BuildConfig.DEBUG, onOpenDebug = { nav.navigate(DebugRoute) })
+            val shortcuts by container.appShortcuts.collectAsStateWithLifecycle()
+            val settings by container.settings.collectAsStateWithLifecycle()
+            SettingsScreen(
+                vm,
+                showDebug = BuildConfig.DEBUG,
+                onOpenDebug = { nav.navigate(DebugRoute) },
+                quickActionsEditor = { onDismiss ->
+                    QuickActionsEditor(
+                        current = settings.quickActions,
+                        shortcuts = shortcuts,
+                        onSave = { list ->
+                            vm.update { it.copy(quickActions = list) }
+                            onDismiss()
+                        },
+                        onDismiss = onDismiss,
+                    )
+                },
+            )
         }
         if (BuildConfig.DEBUG) {
             composable<DebugRoute> {
