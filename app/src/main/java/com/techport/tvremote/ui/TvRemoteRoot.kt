@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,13 +70,12 @@ import com.techport.tvremote.ui.settings.SettingsViewModel
 
 @Composable
 fun TvRemoteRoot(container: AppContainer) {
-    val settings by container.settings.collectAsStateWithLifecycle()
-    val loaded by container.settingsLoaded.collectAsStateWithLifecycle()
+    val loadedSettings by container.settingsOrNull.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var startOnDevices by rememberSaveable { mutableStateOf(false) }
 
     // Blank until settings are read, so returning users never see onboarding flash.
-    if (!loaded) {
+    val settings = loadedSettings ?: run {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
         return
     }
@@ -96,20 +96,24 @@ fun TvRemoteRoot(container: AppContainer) {
     val fullScreen = entry?.destination?.hasRoute(KeyboardRoute::class) == true
     val start: Any = if (startOnDevices) DevicesRoute else RemoteRoute
 
+    // One NavHost moved between layouts (rotation, full-screen keyboard) instead of recreated, so
+    // screens keep their rememberSaveable state (touchpad mode, open sheets, search text).
+    val host = remember(nav, start) { movableContentOf { Destinations(nav, container, start) } }
+
     CompositionLocalProvider(LocalPressFeedback provides feedback) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth >= 600.dp
             when {
-                fullScreen -> Box(Modifier.fillMaxSize()) { Destinations(nav, container, start) }
+                fullScreen -> Box(Modifier.fillMaxSize()) { host() }
                 wide -> Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                     Rail(nav)
-                    Box(Modifier.weight(1f)) { Destinations(nav, container, start) }
+                    Box(Modifier.weight(1f)) { host() }
                 }
                 else -> Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
                     bottomBar = { BottomBar(nav) },
                 ) { padding ->
-                    Box(Modifier.padding(padding)) { Destinations(nav, container, start) }
+                    Box(Modifier.padding(padding)) { host() }
                 }
             }
         }
@@ -148,7 +152,11 @@ private fun Destinations(nav: NavHostController, container: AppContainer, start:
             KeyboardScreen(
                 vm,
                 onClose = { nav.popBackStack() },
-                onOpenSettings = { nav.navigateTopLevel(TopLevelDestination.SETTINGS) },
+                // Pop the keyboard first, or it is saved as the Remote tab's state and reappears there.
+                onOpenSettings = {
+                    nav.popBackStack()
+                    nav.navigateTopLevel(TopLevelDestination.SETTINGS)
+                },
                 voiceButton = if (voice) {
                     { VoiceButton(voiceVm) }
                 } else {

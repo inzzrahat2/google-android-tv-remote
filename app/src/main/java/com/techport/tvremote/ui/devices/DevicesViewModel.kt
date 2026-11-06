@@ -16,6 +16,7 @@ import com.techport.tvremote.protocol.core.PairingSession
 import com.techport.tvremote.protocol.core.ProtocolRegistry
 import com.techport.tvremote.protocol.mock.MockTvProtocol
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -53,18 +55,28 @@ class DevicesViewModel(
     val needsLocalNetwork: Boolean = protocols.protocols.any { it.usesLocalNetwork }
 
     /** Discovery runs only while this screen is visible (WhileSubscribed). */
-    val nearby: StateFlow<NearbyUi> = combine(
-        discovery.discover(),
-        devices.devices,
-        searchWindow(),
-    ) { found, savedList, searching ->
-        val savedIds = savedList.mapTo(HashSet()) { it.id }
-        NearbyUi(
-            searching = searching,
-            devices = found.filterNot { it.id in savedIds },
-            onlineIds = found.mapTo(HashSet()) { it.id },
-        )
+    /** Bumped to rescan, e.g. once local network access is granted (a blocked scan never recovers). */
+    private val scanKey = MutableStateFlow(0)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val nearby: StateFlow<NearbyUi> = scanKey.flatMapLatest {
+        combine(
+            discovery.discover(),
+            devices.devices,
+            searchWindow(),
+        ) { found, savedList, searching ->
+            val savedIds = savedList.mapTo(HashSet()) { it.id }
+            NearbyUi(
+                searching = searching,
+                devices = found.filterNot { it.id in savedIds },
+                onlineIds = found.mapTo(HashSet()) { it.id },
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NearbyUi())
+
+    fun restartDiscovery() {
+        scanKey.value++
+    }
 
     private val _pairing = MutableStateFlow<PairingUi?>(null)
     val pairing: StateFlow<PairingUi?> = _pairing.asStateFlow()

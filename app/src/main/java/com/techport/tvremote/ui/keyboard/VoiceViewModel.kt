@@ -7,12 +7,15 @@ import com.techport.tvremote.core.voice.VoiceRecorder
 import com.techport.tvremote.domain.model.RemoteException
 import com.techport.tvremote.domain.remote.RemoteController
 import java.util.concurrent.atomic.AtomicBoolean
+import com.techport.tvremote.protocol.core.VoiceSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.NonCancellable
 
 enum class VoicePhase {
     IDLE,
@@ -114,13 +117,19 @@ class VoiceViewModel(
                     if (message == null) message = VoiceMessage.UNSUPPORTED
                     return@launch
                 }
+                val once = EndOnce(session)
                 if (!signal.get()) _state.value = _state.value.copy(phase = VoicePhase.LISTENING)
-                message = when (recorder.stream(session, signal)) {
-                    VoiceOutcome.SENT -> null
-                    VoiceOutcome.NO_PERMISSION -> VoiceMessage.NO_PERMISSION
-                    VoiceOutcome.MIC_UNAVAILABLE -> VoiceMessage.MIC_UNAVAILABLE
-                    VoiceOutcome.MIC_FAILED -> VoiceMessage.MIC_FAILED
-                    VoiceOutcome.SEND_FAILED -> VoiceMessage.FAILED
+                try {
+                    message = when (recorder.stream(once, signal)) {
+                        VoiceOutcome.SENT -> null
+                        VoiceOutcome.NO_PERMISSION -> VoiceMessage.NO_PERMISSION
+                        VoiceOutcome.MIC_UNAVAILABLE -> VoiceMessage.MIC_UNAVAILABLE
+                        VoiceOutcome.MIC_FAILED -> VoiceMessage.MIC_FAILED
+                        VoiceOutcome.SEND_FAILED -> VoiceMessage.FAILED
+                    }
+                } finally {
+                    // stream() may be cancelled before it even starts; always close what we opened.
+                    withContext(NonCancellable) { runCatching { once.end() } }
                 }
             } catch (e: CancellationException) {
                 message = null
@@ -134,5 +143,16 @@ class VoiceViewModel(
 
     override fun onCleared() {
         job?.cancel()
+    }
+}
+
+/** Forwards to [session] but lets end() through only once, whoever calls it first. */
+private class EndOnce(private val session: VoiceSession) : VoiceSession {
+    private val ended = AtomicBoolean(false)
+
+    override suspend fun send(pcm: ByteArray) = session.send(pcm)
+
+    override suspend fun end() {
+        if (ended.compareAndSet(false, true)) session.end()
     }
 }

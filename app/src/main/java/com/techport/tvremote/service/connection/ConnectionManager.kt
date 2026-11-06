@@ -21,11 +21,9 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -80,8 +78,11 @@ class ConnectionManager(
     // Bounded so a stalled socket cannot queue minutes of stale key presses.
     private val commands = Channel<RemoteCommand>(capacity = 32, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    /** Cuts a backoff wait short (network came back, user tapped retry). */
-    private val wakeUp = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    /**
+     * Cuts a backoff wait short (network came back, user tapped retry). Conflated so a signal
+     * that arrives mid-attempt is still seen by the wait that follows.
+     */
+    private val wakeUp = Channel<Unit>(Channel.CONFLATED)
 
     init {
         scope.launch {
@@ -103,7 +104,7 @@ class ConnectionManager(
     override fun retry() {
         scope.launch {
             when (val current = _state.value) {
-                is ConnectionState.Reconnecting -> wakeUp.tryEmit(Unit)
+                is ConnectionState.Reconnecting -> wakeUp.trySend(Unit)
                 is ConnectionState.Disconnected -> connect(current.device)
                 is ConnectionState.PairingRequired -> connect(current.device)
                 else -> Unit
@@ -113,10 +114,13 @@ class ConnectionManager(
 
     override fun disconnect() {
         scope.launch {
-            connectionJob?.cancelAndJoinQuietly()
+            // Detach before suspending: a connect() that runs during the join must not be
+            // overwritten (and orphaned) by the state written here afterwards.
+            val job = connectionJob
             connectionJob = null
             _state.value = _state.value.device?.let { ConnectionState.Disconnected(it, null) } ?: ConnectionState.Idle
             logger.i(TAG, "Disconnected by user")
+            job?.cancelAndJoinQuietly()
         }
     }
 
@@ -124,16 +128,17 @@ class ConnectionManager(
     fun release(deviceId: String) {
         scope.launch {
             if (_state.value.device?.id == deviceId) {
-                connectionJob?.cancelAndJoinQuietly()
+                val job = connectionJob
                 connectionJob = null
                 _state.value = ConnectionState.Idle
+                job?.cancelAndJoinQuietly()
             }
         }
     }
 
     /** Network (re)appeared: retry now instead of waiting out the backoff. */
     fun onNetworkAvailable() {
-        wakeUp.tryEmit(Unit)
+        wakeUp.trySend(Unit)
     }
 
     override fun send(command: RemoteCommand) {
@@ -188,6 +193,7 @@ class ConnectionManager(
                 return
             }
 
+            wakeUp.tryReceive() // only wake-ups from during this attempt should cut the next wait short
             val startedAt = clock()
             val opened: RemoteSession? = try {
                 withTimeout(connectTimeoutMs()) { protocol.openSession(device) }
@@ -220,7 +226,7 @@ class ConnectionManager(
                 val wait = policy.delayFor(attempt)
                 _state.value = ConnectionState.Reconnecting(device, attempt, lastError)
                 logger.i(TAG, "Retrying ${device.name} in ${wait}ms (attempt $attempt)")
-                withTimeoutOrNull(wait) { wakeUp.first() }
+                withTimeoutOrNull(wait) { wakeUp.receive() }
                 continue
             }
 

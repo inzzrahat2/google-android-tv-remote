@@ -26,10 +26,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,8 +53,8 @@ fun SettingsScreen(
     quickActionsEditor: (@Composable (onDismiss: () -> Unit) -> Unit)? = null,
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
-    var customizing by remember { mutableStateOf(false) }
-    var editingQuickActions by remember { mutableStateOf(false) }
+    var customizing by rememberSaveable { mutableStateOf(false) }
+    var editingQuickActions by rememberSaveable { mutableStateOf(false) }
 
     if (customizing) {
         CustomizeButtonsDialog(
@@ -87,6 +90,7 @@ fun SettingsScreen(
                     Text(stringResource(R.string.settings_key_repeat_value, settings.keyRepeatIntervalMs.toInt()))
                     // Lower interval = faster repeat; the slider is inverted so right means faster.
                     CommitSlider(
+                        label = R.string.settings_key_repeat,
                         value = (MAX_REPEAT_MS + MIN_REPEAT_MS - settings.keyRepeatIntervalMs).toFloat(),
                         onCommit = { v ->
                             val interval = MAX_REPEAT_MS + MIN_REPEAT_MS - v.roundToLong()
@@ -105,6 +109,7 @@ fun SettingsScreen(
             headlineContent = { Text(stringResource(R.string.settings_touchpad_sensitivity)) },
             supportingContent = {
                 CommitSlider(
+                    label = R.string.settings_touchpad_sensitivity,
                     value = settings.touchpadSensitivity,
                     onCommit = { v -> viewModel.update { it.copy(touchpadSensitivity = v) } },
                     valueRange = 0.5f..2f,
@@ -168,10 +173,12 @@ fun SettingsScreen(
                 Column {
                     Text(stringResource(R.string.settings_timeout_value, settings.connectionTimeoutSec))
                     CommitSlider(
+                        label = R.string.settings_timeout,
                         value = settings.connectionTimeoutSec.toFloat(),
                         onCommit = { v -> viewModel.update { it.copy(connectionTimeoutSec = v.roundToInt()) } },
-                        valueRange = 4f..20f,
-                        steps = 15,
+                        // Floor of 10 s: a reconnect may need TCP + an NSD re-resolve + TLS.
+                        valueRange = MIN_TIMEOUT_SEC.toFloat()..30f,
+                        steps = 30 - MIN_TIMEOUT_SEC - 1,
                     )
                 }
             },
@@ -204,6 +211,7 @@ fun SettingsScreen(
     }
 }
 
+private const val MIN_TIMEOUT_SEC = 10
 private const val MIN_REPEAT_MS = 60L
 private const val MAX_REPEAT_MS = 250L
 
@@ -219,10 +227,12 @@ private fun Section(title: Int) {
 
 @Composable
 private fun Toggle(title: Int, summary: Int?, checked: Boolean, onChange: (Boolean) -> Unit) {
+    // The whole row is the control, so TalkBack reads the title with the switch state.
     ListItem(
         headlineContent = { Text(stringResource(title)) },
         supportingContent = summary?.let { { Text(stringResource(it)) } },
-        trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
     )
 }
 
@@ -284,12 +294,14 @@ private val HIDEABLE_KEYS = listOf(
 /** Tracks the drag locally and persists once on release, instead of a DataStore write per frame. */
 @Composable
 private fun CommitSlider(
+    label: Int,
     value: Float,
     onCommit: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
     steps: Int = 0,
 ) {
     var dragging by remember { mutableStateOf<Float?>(null) }
+    val labelText = stringResource(label)
     Slider(
         value = dragging ?: value,
         onValueChange = { dragging = it },
@@ -299,5 +311,6 @@ private fun CommitSlider(
         },
         valueRange = valueRange,
         steps = steps,
+        modifier = Modifier.semantics { contentDescription = labelText },
     )
 }

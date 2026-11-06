@@ -198,7 +198,7 @@ fun RemoteScreen(
                         pointerArea(if (touchpadMode) Modifier.fillMaxSize() else Modifier.widthIn(max = 300.dp))
                     }
                     Column(
-                        Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                        Modifier.weight(1f).scrollOnlyIfNeeded(),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         controls.VolumeRow()
@@ -210,7 +210,7 @@ fun RemoteScreen(
             } else {
                 // One-handed: controls sit toward the bottom, D-pad in the thumb zone.
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    Modifier.fillMaxSize().scrollOnlyIfNeeded()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -494,6 +494,16 @@ private fun ConnectionBanner(
         }
         else -> Unit
     }
+}
+
+/**
+ * A scroll container claims every vertical drag, even with nothing to scroll, which would starve
+ * swipe navigation. Only enable scrolling when the content actually overflows (small screens).
+ */
+@Composable
+private fun Modifier.scrollOnlyIfNeeded(): Modifier {
+    val scroll = rememberScrollState()
+    return verticalScroll(scroll, enabled = scroll.maxValue > 0)
 }
 
 @Composable

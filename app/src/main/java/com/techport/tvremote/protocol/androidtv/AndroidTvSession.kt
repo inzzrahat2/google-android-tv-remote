@@ -31,6 +31,8 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -132,7 +134,13 @@ class AndroidTvSession internal constructor(
     override suspend fun startVoice(): VoiceSession? {
         if (!_capabilities.value.voice || !ready.isCompleted || closed.isCompleted) return null
         return voiceLock.withLock {
-            if (voiceSessionId != null) throw RemoteException(RemoteError.PROTOCOL_ERROR, "Voice session already open")
+            // A session left open (caller cancelled before ending it) would block voice until
+            // reconnect; close it on the TV and start fresh instead.
+            voiceSessionId?.let { stale ->
+                logger.w(TAG, "Closing stale voice session $stale")
+                runCatching { send(RemoteMessage(voiceEnd = VoiceEnd(stale))) }
+                voiceSessionId = null
+            }
             val begin = CompletableDeferred<Int>()
             pendingVoice = begin
             try {
@@ -146,7 +154,13 @@ class AndroidTvSession internal constructor(
                     publishCapabilities()
                     return@withLock null
                 }
-                send(RemoteMessage(voiceBegin = VoiceBegin(id)))
+                try {
+                    send(RemoteMessage(voiceBegin = VoiceBegin(id)))
+                } catch (e: CancellationException) {
+                    // The TV is listening on [id]; don't leave it open with nobody to end it.
+                    withContext(NonCancellable) { runCatching { send(RemoteMessage(voiceEnd = VoiceEnd(id))) } }
+                    throw e
+                }
                 voiceSessionId = id
                 logger.i(TAG, "Voice session $id open")
                 AndroidTvVoiceSession(id)

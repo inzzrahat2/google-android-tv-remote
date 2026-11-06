@@ -56,6 +56,10 @@ class AndroidTvSupportTest {
         assertEquals(RemoteError.CONNECTION_LOST, mapIoError(SocketTimeoutException(), established = true))
         assertEquals(RemoteError.PAIRING_REJECTED, mapIoError(SSLHandshakeException("bad_certificate"), established = false))
         assertEquals(RemoteError.CONNECTION_LOST, mapIoError(SSLException("reset"), established = true))
+        // A TV waking up may reset mid-handshake: retryable, not a reason to re-pair.
+        val reset = SSLHandshakeException("Connection closed by peer").apply { initCause(SocketException("reset")) }
+        assertEquals(RemoteError.CONNECTION_LOST, mapIoError(reset, established = false))
+        assertEquals(RemoteError.CONNECTION_LOST, mapIoError(SSLException("Read error"), established = false))
         val pinned = SSLHandshakeException("untrusted").apply { initCause(CertificatePinMismatchException()) }
         assertEquals(RemoteError.CERTIFICATE_CHANGED, mapIoError(pinned, established = false))
         assertEquals(RemoteError.PROTOCOL_ERROR, mapIoError(ProtoException("bad"), established = true))

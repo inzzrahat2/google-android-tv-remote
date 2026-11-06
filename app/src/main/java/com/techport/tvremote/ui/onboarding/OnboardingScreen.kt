@@ -1,11 +1,5 @@
 package com.techport.tvremote.ui.onboarding
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.techport.tvremote.R
 import com.techport.tvremote.core.permissions.LocalNetworkPermission
+import com.techport.tvremote.core.permissions.findActivity
+import com.techport.tvremote.core.permissions.openAppSettings
 
 /**
  * First-launch screen: what the app does, that it stays on the local network, and (Android 17+)
@@ -211,17 +207,4 @@ private fun PermissionCard(denied: Boolean, permanentlyDenied: Boolean) {
             )
         }
     }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
-
-private fun Context.openAppSettings() {
-    startActivity(
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-    )
 }

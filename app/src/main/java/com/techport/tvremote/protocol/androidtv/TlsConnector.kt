@@ -17,7 +17,13 @@ import java.security.interfaces.RSAPublicKey
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLException
 import javax.net.ssl.SSLSocket
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Opens TLS connections with our client certificate and, when given, a pinned TV certificate. */
@@ -32,7 +38,30 @@ internal class TlsConnector(
      * TV presents. [readTimeoutMs] bounds every later blocking read (0 = none).
      * Throws [RemoteException] (already mapped) on failure; never leaks the socket.
      */
-    suspend fun connect(host: String, port: Int, pinnedSha256: String?, readTimeoutMs: Int): SecureChannel =
+    suspend fun connect(host: String, port: Int, pinnedSha256: String?, readTimeoutMs: Int): SecureChannel = coroutineScope {
+        val raw = Socket()
+        val opened = AtomicReference<SecureChannel?>(null)
+        // Blocking connect/handshake ignore coroutine cancellation; closing the socket is what
+        // aborts them, so a timeout or disconnect takes effect at once instead of after ~9 s.
+        val watchdog = launch(io, start = CoroutineStart.UNDISPATCHED) {
+            try {
+                awaitCancellation()
+            } finally {
+                if (opened.get() == null) runCatching { raw.close() }
+            }
+        }
+        try {
+            open(raw, host, port, pinnedSha256, readTimeoutMs).also(opened::set)
+        } catch (e: CancellationException) {
+            // withContext drops a result that completed just as we were cancelled; close it.
+            runCatching { opened.get()?.transport?.close() ?: raw.close() }
+            throw e
+        } finally {
+            watchdog.cancel()
+        }
+    }
+
+    private suspend fun open(raw: Socket, host: String, port: Int, pinnedSha256: String?, readTimeoutMs: Int): SecureChannel =
         withContext(io) {
             val credentials = try {
                 identity.obtain()
@@ -41,7 +70,6 @@ internal class TlsConnector(
             }
             val trust = PinningTrustManager(pinnedSha256)
             val context = SSLContext.getInstance("TLS").apply { init(credentials.keyManagers, arrayOf(trust), null) }
-            val raw = Socket()
             var tls: SSLSocket? = null
             try {
                 raw.tcpNoDelay = true
@@ -83,13 +111,29 @@ internal fun mapIoError(e: Throwable, established: Boolean): RemoteError {
         is SocketTimeoutException -> if (established) RemoteError.CONNECTION_LOST else RemoteError.TIMEOUT
         is ConnectException, is NoRouteToHostException, is UnknownHostException, is PortUnreachableException ->
             RemoteError.UNREACHABLE
-        // Before the session is up, a TLS failure means the TV refused our certificate (it no longer
-        // trusts this phone, e.g. after "clear data" on the TV). Afterwards it is just a dropped link.
-        is SSLException -> if (established) RemoteError.CONNECTION_LOST else RemoteError.PAIRING_REJECTED
+        // Only an explicit TLS refusal before the session is up means the TV no longer trusts this
+        // phone (e.g. after "clear data" on the TV). A reset/EOF mid-handshake (TV waking up, its
+        // remote service restarting) is transient and must be retried, not sent to re-pairing.
+        is SSLException -> when {
+            established -> RemoteError.CONNECTION_LOST
+            e.isTlsRefusal() -> RemoteError.PAIRING_REJECTED
+            else -> RemoteError.CONNECTION_LOST
+        }
         is EOFException, is SocketException -> RemoteError.CONNECTION_LOST
         is IOException -> RemoteError.CONNECTION_LOST
         else -> RemoteError.UNKNOWN
     }
+}
+
+private val REFUSAL_ALERTS = listOf(
+    "certificate_unknown", "bad_certificate", "unknown_ca", "access_denied", "certificate_required",
+    "handshake_failure", "unsupported_certificate", "certificate_revoked",
+)
+
+private fun Throwable.isTlsRefusal(): Boolean {
+    val chain = causes().toList()
+    if (chain.any { it is EOFException || (it is SocketException && it !is SSLException) }) return false
+    return chain.any { c -> REFUSAL_ALERTS.any { c.message?.contains(it, ignoreCase = true) == true } }
 }
 
 private fun Throwable.causes(): Sequence<Throwable> = generateSequence(this) { it.cause.takeIf { c -> c !== it } }

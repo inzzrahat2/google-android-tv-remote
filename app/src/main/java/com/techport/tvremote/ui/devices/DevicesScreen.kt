@@ -45,6 +45,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,9 +55,12 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.techport.tvremote.R
 import com.techport.tvremote.core.permissions.LocalNetworkPermission
+import com.techport.tvremote.core.permissions.findActivity
+import com.techport.tvremote.core.permissions.openAppSettings
 import com.techport.tvremote.domain.model.ConnectionState
 import com.techport.tvremote.domain.model.DiscoveredDevice
 import com.techport.tvremote.domain.model.TvDevice
@@ -73,12 +77,27 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
 
-    var renaming by remember { mutableStateOf<TvDevice?>(null) }
-    var addingManually by remember { mutableStateOf(false) }
-    var forgetting by remember { mutableStateOf<TvDevice?>(null) }
+    // Ids, not devices, so open dialogs survive rotation.
+    var renamingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var addingManually by rememberSaveable { mutableStateOf(false) }
+    var forgettingId by rememberSaveable { mutableStateOf<String?>(null) }
     var permissionGranted by remember { mutableStateOf(LocalNetworkPermission.isGranted(context)) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        permissionGranted = it
+    var permanentlyDenied by rememberSaveable { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        permissionGranted = ok
+        if (ok) {
+            viewModel.restartDiscovery()
+        } else {
+            permanentlyDenied = context.findActivity()
+                ?.shouldShowRequestPermissionRationale(LocalNetworkPermission.PERMISSION) == false
+        }
+    }
+    // The grant may also happen in system Settings; re-check whenever we come back.
+    LifecycleResumeEffect(Unit) {
+        val now = LocalNetworkPermission.isGranted(context)
+        if (now && !permissionGranted) viewModel.restartDiscovery()
+        permissionGranted = now
+        onPauseOrDispose { }
     }
 
     val latencyUnavailable = stringResource(R.string.devices_latency_unavailable)
@@ -99,7 +118,11 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
 
             if (viewModel.needsLocalNetwork && !permissionGranted) {
                 item {
-                    PermissionCard(onAllow = { permissionLauncher.launch(LocalNetworkPermission.PERMISSION) })
+                    PermissionCard(
+                        permanentlyDenied = permanentlyDenied,
+                        onAllow = { permissionLauncher.launch(LocalNetworkPermission.PERMISSION) },
+                        onOpenSettings = { context.openAppSettings() },
+                    )
                 }
             }
 
@@ -128,8 +151,8 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
                         }
                     },
                     onDisconnect = viewModel::disconnect,
-                    onRename = { renaming = device },
-                    onForget = { forgetting = device },
+                    onRename = { renamingId = device.id },
+                    onForget = { forgettingId = device.id },
                     onFavorite = { viewModel.toggleFavorite(device) },
                     onMove = { viewModel.move(device, it) },
                     onTest = viewModel::testConnection,
@@ -176,25 +199,25 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
         )
     }
 
-    renaming?.let { device ->
-        RenameDialog(device, onDismiss = { renaming = null }, onSave = {
+    saved.find { it.id == renamingId }?.let { device ->
+        RenameDialog(device, onDismiss = { renamingId = null }, onSave = {
             viewModel.rename(device, it)
-            renaming = null
+            renamingId = null
         })
     }
 
-    forgetting?.let { device ->
+    saved.find { it.id == forgettingId }?.let { device ->
         AlertDialog(
-            onDismissRequest = { forgetting = null },
+            onDismissRequest = { forgettingId = null },
             title = { Text(stringResource(R.string.devices_forget_title, device.name)) },
             text = { Text(stringResource(R.string.devices_forget_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.forget(device)
-                    forgetting = null
+                    forgettingId = null
                 }) { Text(stringResource(R.string.action_forget)) }
             },
-            dismissButton = { TextButton(onClick = { forgetting = null }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = { TextButton(onClick = { forgettingId = null }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 }
@@ -210,7 +233,7 @@ private fun SectionTitle(res: Int) {
 }
 
 @Composable
-private fun PermissionCard(onAllow: () -> Unit) {
+private fun PermissionCard(permanentlyDenied: Boolean, onAllow: () -> Unit, onOpenSettings: () -> Unit) {
     Card(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -218,7 +241,11 @@ private fun PermissionCard(onAllow: () -> Unit) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.error_permission_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.error_permission_body), style = MaterialTheme.typography.bodyMedium)
-            Button(onClick = onAllow) { Text(stringResource(R.string.action_allow)) }
+            if (permanentlyDenied) {
+                Button(onClick = onOpenSettings) { Text(stringResource(R.string.platform_onboarding_open_settings)) }
+            } else {
+                Button(onClick = onAllow) { Text(stringResource(R.string.action_allow)) }
+            }
         }
     }
 }
@@ -311,7 +338,7 @@ private fun NearbyDeviceRow(device: DiscoveredDevice, onPair: () -> Unit) {
 
 @Composable
 private fun RenameDialog(device: TvDevice, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var name by remember { mutableStateOf(device.name) }
+    var name by rememberSaveable { mutableStateOf(device.name) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.devices_rename_title)) },
@@ -332,8 +359,8 @@ private fun RenameDialog(device: TvDevice, onDismiss: () -> Unit, onSave: (Strin
 
 @Composable
 private fun ManualEntryDialog(onDismiss: () -> Unit, onSubmit: (String) -> Boolean) {
-    var host by remember { mutableStateOf("") }
-    var invalid by remember { mutableStateOf(false) }
+    var host by rememberSaveable { mutableStateOf("") }
+    var invalid by rememberSaveable { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.devices_add_manual)) },

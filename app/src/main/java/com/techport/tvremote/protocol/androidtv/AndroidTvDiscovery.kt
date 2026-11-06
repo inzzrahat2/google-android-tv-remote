@@ -64,7 +64,7 @@ class AndroidTvDiscovery(context: Context, private val logger: AppLogger) : Disc
         val resolver: Resolver = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             CallbackResolver(nsd, ::onResolved, ::onGone)
         } else {
-            SerialResolver(nsd, ::onResolved)
+            SerialResolver(::onResolved)
         }
 
         val listener = object : NsdManager.DiscoveryListener {
@@ -137,61 +137,88 @@ class AndroidTvDiscovery(context: Context, private val logger: AppLogger) : Disc
         fun stop()
     }
 
-    /** Pre-API 34: NsdManager allows one resolve at a time, so resolves are queued. */
+    /**
+     * Pre-API 34: NsdManager allows one pending resolve per *process*, so every discovery flow
+     * (the TVs screen and a reconnect's re-resolve may run together) shares one queue.
+     */
+    private val resolveQueue by lazy { ResolveQueue(appContext.getSystemService(NsdManager::class.java)) }
+
     @Suppress("DEPRECATION")
-    private inner class SerialResolver(
-        private val nsd: NsdManager,
-        private val onResolved: (NsdServiceInfo) -> Unit,
-    ) : Resolver {
-        private val queue = ArrayDeque<NsdServiceInfo>()
-        private var inFlight = false
-        private var stopped = false
+    private inner class ResolveQueue(private val nsd: NsdManager) {
+        private inner class Request(val info: NsdServiceInfo, val client: SerialResolver, var attempts: Int = 0)
 
-        override fun add(info: NsdServiceInfo) {
-            synchronized(this) {
-                if (queue.none { it.serviceName == info.serviceName }) queue.addLast(info)
-                next()
+        private val queue = ArrayDeque<Request>()
+        private var inFlight: Request? = null
+
+        fun add(info: NsdServiceInfo, client: SerialResolver) = synchronized(this) {
+            if (queue.none { it.client === client && it.info.serviceName == info.serviceName }) {
+                queue.addLast(Request(info, client))
             }
+            next()
         }
 
-        override fun remove(serviceName: String) {
-            synchronized(this) { queue.removeAll { it.serviceName == serviceName } }
-        }
-
-        override fun stop() {
+        /** Drops queued requests of [client] (all of them when [serviceName] is null). */
+        fun remove(client: SerialResolver, serviceName: String?) {
             synchronized(this) {
-                stopped = true
-                queue.clear()
+                queue.removeAll { it.client === client && (serviceName == null || it.info.serviceName == serviceName) }
             }
         }
 
         private fun next() {
-            if (inFlight || stopped) return
-            val info = queue.removeFirstOrNull() ?: return
-            inFlight = true
-            try {
-                nsd.resolveService(info, listener)
-            } catch (e: RuntimeException) {
-                logger.w(TAG, "Resolve failed to start", e)
-                inFlight = false
+            while (inFlight == null) {
+                val request = queue.removeFirstOrNull() ?: return
+                inFlight = request
+                try {
+                    nsd.resolveService(request.info, listener)
+                } catch (e: RuntimeException) {
+                    logger.w(TAG, "Resolve failed to start", e)
+                    inFlight = null
+                }
             }
         }
 
         private val listener = object : NsdManager.ResolveListener {
             override fun onServiceResolved(info: NsdServiceInfo) {
-                onResolved(info)
-                done()
+                val request = synchronized(this@ResolveQueue) { inFlight.also { inFlight = null } }
+                request?.client?.deliver(info)
+                synchronized(this@ResolveQueue) { next() }
             }
 
             override fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) {
                 logger.d(TAG, "Resolve failed (code $errorCode)")
-                done()
+                synchronized(this@ResolveQueue) {
+                    val request = inFlight
+                    inFlight = null
+                    // Another app's resolve may hold the system slot; retry a few times, not forever.
+                    if (errorCode == NsdManager.FAILURE_ALREADY_ACTIVE && request != null &&
+                        request.attempts < MAX_RESOLVE_ATTEMPTS && !request.client.isStopped
+                    ) {
+                        request.attempts++
+                        queue.addLast(request)
+                    }
+                    next()
+                }
             }
         }
+    }
 
-        private fun done() = synchronized(this) {
-            inFlight = false
-            next()
+    /** One discovery flow's view of the shared [ResolveQueue]. */
+    private inner class SerialResolver(private val onResolved: (NsdServiceInfo) -> Unit) : Resolver {
+        @Volatile
+        var isStopped = false
+            private set
+
+        override fun add(info: NsdServiceInfo) = resolveQueue.add(info, this)
+
+        override fun remove(serviceName: String) = resolveQueue.remove(this, serviceName)
+
+        override fun stop() {
+            isStopped = true
+            resolveQueue.remove(this, null)
+        }
+
+        fun deliver(info: NsdServiceInfo) {
+            if (!isStopped) onResolved(info)
         }
     }
 
@@ -247,6 +274,7 @@ class AndroidTvDiscovery(context: Context, private val logger: AppLogger) : Disc
         const val SERVICE_TYPE = "_androidtvremote2._tcp"
         private const val SERVICE_NAME_FRAGMENT = "_androidtvremote2"
         private const val TAG = "AtvDiscovery"
+        private const val MAX_RESOLVE_ATTEMPTS = 3
 
         /** Stable id: Bluetooth MAC from TXT `bt` when it looks like a MAC, else the service name. */
         fun deviceIdFor(serviceName: String, btMac: String?): String {

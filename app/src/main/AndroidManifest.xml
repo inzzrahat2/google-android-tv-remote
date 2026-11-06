@@ -13,6 +13,9 @@
     <!-- Voice search: microphone audio is streamed to the TV only while the user holds the voice button. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Voice is optional (only offered when the TV supports it); don't exclude devices without a mic. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
     <application
         android:name=".TvRemoteApp"
         android:allowBackup="false"

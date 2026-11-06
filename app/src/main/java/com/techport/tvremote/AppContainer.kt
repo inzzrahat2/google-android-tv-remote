@@ -59,15 +59,15 @@ class AppContainer(context: Context) : PlatformHost {
     val deviceRepository: DeviceRepository = DataStoreDeviceRepository(dataStore)
     val appShortcutRepository: AppShortcutRepository = DataStoreAppShortcutRepository(dataStore)
 
+    /** Null until settings were read from disk; one flow, so "loaded" and the values can't disagree. */
+    val settingsOrNull: StateFlow<AppSettings?> =
+        settingsRepository.settings.stateIn(appScope, SharingStarted.Eagerly, null)
+
     val settings: StateFlow<AppSettings> =
-        settingsRepository.settings.stateIn(appScope, SharingStarted.Eagerly, AppSettings())
+        settingsOrNull.map { it ?: AppSettings() }.stateIn(appScope, SharingStarted.Eagerly, AppSettings())
 
     val appShortcuts: StateFlow<List<AppShortcut>> =
         appShortcutRepository.shortcuts.stateIn(appScope, SharingStarted.Eagerly, emptyList())
-
-    /** False until settings were read from disk; avoids flashing onboarding at cold start. */
-    val settingsLoaded: StateFlow<Boolean> =
-        settingsRepository.settings.map { true }.stateIn(appScope, SharingStarted.Eagerly, false)
 
     val androidTv = AndroidTvProtocol(context, logger)
 
@@ -90,7 +90,8 @@ class AppContainer(context: Context) : PlatformHost {
         devices = deviceRepository,
         logger = logger,
         autoReconnect = { settings.value.autoReconnect },
-        connectTimeoutMs = { settings.value.connectionTimeoutSec * 1_000L },
+        // Older builds allowed 4 s, which cannot fit a re-resolve of a moved TV.
+        connectTimeoutMs = { settings.value.connectionTimeoutSec.coerceAtLeast(10) * 1_000L },
     )
 
     private val autoConnector = AutoConnector(deviceRepository, connectionManager)
