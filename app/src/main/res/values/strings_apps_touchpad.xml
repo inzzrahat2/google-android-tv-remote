@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Apps, touchpad, quick actions and input source strings. "apps_title" lives in strings.xml. -->
+<!-- Apps, touchpad, quick actions and input source. -->
 <resources>
+    <string name="apps_title">TV Apps</string>
     <!-- Apps -->
     <string name="apps_add">Add app</string>
     <string name="apps_search">Search apps</string>

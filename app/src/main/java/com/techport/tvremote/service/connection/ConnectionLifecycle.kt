@@ -15,8 +15,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -52,7 +50,6 @@ class ConnectionLifecycle(
     private var networkJob: Job? = null
 
     private val _isInForeground = MutableStateFlow(false)
-    val isInForeground: StateFlow<Boolean> = _isInForeground.asStateFlow()
 
     private val observer = object : DefaultLifecycleObserver {
         override fun onStart(owner: LifecycleOwner) = onForeground()

@@ -60,8 +60,6 @@ enum class RemoteKey(val keyCode: Int, val group: KeyGroup) {
 
     companion object {
         val DIRECTIONS = setOf(DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT)
-        private val byCode = entries.associateBy { it.keyCode }
-        fun fromKeyCode(code: Int): RemoteKey? = byCode[code]
     }
 }
 

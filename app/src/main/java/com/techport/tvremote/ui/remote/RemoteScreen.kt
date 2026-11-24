@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,28 +25,14 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.material3.FilterChip
-import com.techport.tvremote.ui.inputs.InputsSheet
-import com.techport.tvremote.ui.quickactions.QuickActionsBar
-import com.techport.tvremote.ui.touchpad.TouchpadScreen
-import com.techport.tvremote.ui.touchpad.swipeNavigation
 import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.Keyboard
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalContext
-import com.techport.tvremote.core.connectivity.ConnectionIssues
-import com.techport.tvremote.core.permissions.LocalNetworkPermission
-import com.techport.tvremote.domain.model.RemoteError
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Input
+import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Menu
@@ -60,6 +48,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -69,13 +59,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -84,9 +77,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.techport.tvremote.R
+import com.techport.tvremote.core.connectivity.ConnectionIssues
+import com.techport.tvremote.core.permissions.LocalNetworkPermission
 import com.techport.tvremote.domain.model.ConnectionState
 import com.techport.tvremote.domain.model.KeyAction
 import com.techport.tvremote.domain.model.RemoteCapabilities
+import com.techport.tvremote.domain.model.RemoteError
 import com.techport.tvremote.domain.model.RemoteKey
 import com.techport.tvremote.domain.model.RemoteLayout
 import com.techport.tvremote.domain.model.TvDevice
@@ -97,6 +93,10 @@ import com.techport.tvremote.ui.components.RemoteKeyButton
 import com.techport.tvremote.ui.components.StatusDot
 import com.techport.tvremote.ui.components.labelRes
 import com.techport.tvremote.ui.components.text
+import com.techport.tvremote.ui.inputs.InputsSheet
+import com.techport.tvremote.ui.quickactions.QuickActionsBar
+import com.techport.tvremote.ui.touchpad.TouchpadScreen
+import com.techport.tvremote.ui.touchpad.swipeNavigation
 
 @Composable
 fun RemoteScreen(
@@ -467,8 +467,8 @@ private fun ConnectionBanner(
     }
     if (otherNetwork) {
         ErrorBanner(
-            R.string.platform_error_other_network_title,
-            R.string.platform_error_other_network_body,
+            R.string.error_other_network_title,
+            R.string.error_other_network_body,
             R.string.action_try_again,
             onRetry,
             onChangeTv,

@@ -3,6 +3,7 @@ package com.techport.tvremote.widget
 import android.content.Context
 import com.techport.tvremote.domain.model.ConnectionState
 import com.techport.tvremote.domain.repository.DeviceRepository
+import com.techport.tvremote.service.connection.preferredDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -25,7 +26,7 @@ class RemoteWidgetUpdater(
 
     fun start() {
         combine(state, devices.devices, devices.lastSelectedId) { s, saved, lastId ->
-            WidgetModel(widgetTarget(s, saved, lastId)?.name)
+            WidgetModel(preferredDevice(s, saved, lastId)?.name)
         }
             .distinctUntilChanged()
             .onEach { RemoteWidgets.updateAll(context, it) }

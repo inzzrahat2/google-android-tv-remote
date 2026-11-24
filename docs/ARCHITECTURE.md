@@ -9,7 +9,7 @@ domain/remote/RemoteController          ← the only remote API the UI sees
 service/connection/ConnectionManager    ← state machine, command queue, reconnection
    ▼
 protocol/core/ProtocolRegistry ─┬─ protocol/mock     (debug builds only)
-                                ├─ protocol/androidtv (Phase 3: Android TV Remote v2)
+                                ├─ protocol/androidtv (Android TV Remote Service v2)
                                 └─ future adapters
 ```
 
@@ -20,9 +20,10 @@ protocol/core/ProtocolRegistry ─┬─ protocol/mock     (debug builds only)
 | `domain/model` | Pure Kotlin types: `TvDevice`, `RemoteKey`, `RemoteCapabilities`, `ConnectionState`, `RemoteError`, `PairingState`, `AppSettings`. No Android imports. |
 | `domain/repository`, `domain/remote` | Interfaces the rest of the app depends on. |
 | `protocol/core` | `RemoteProtocol`, `RemoteSession`, `PairingSession`, `DiscoverySource`. Every protocol adapter implements these. |
-| `service/connection` | `ConnectionManager` (implements `RemoteController`), `ReconnectPolicy`, `AutoConnector`. |
-| `data` | DataStore-backed repositories (devices, settings). |
-| `core` | Platform services: logging, haptics, network monitor, permissions, discovery aggregation. |
+| `service/connection` | `ConnectionManager` (implements `RemoteController`), `ConnectionLifecycle` (foreground/background and network-driven connect/disconnect), `ReconnectPolicy`, `AutoConnector`. |
+| `data` | DataStore-backed repositories (devices, settings, app shortcuts). |
+| `core` | Platform services: logging, haptics, network monitor, permissions, discovery aggregation, clipboard, voice recording. |
+| `widget`, `service/tile` | Home-screen widgets (RemoteViews, `WidgetKeySender`) and the Quick Settings tile. They reuse the app's session and never keep a connection open. |
 | `ui` | Compose screens, one ViewModel per screen, theme, navigation. |
 
 ## Key decisions

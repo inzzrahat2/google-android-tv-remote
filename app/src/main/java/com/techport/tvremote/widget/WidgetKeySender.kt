@@ -7,6 +7,7 @@ import com.techport.tvremote.domain.model.TvDevice
 import com.techport.tvremote.domain.model.device
 import com.techport.tvremote.domain.remote.RemoteController
 import com.techport.tvremote.domain.repository.DeviceRepository
+import com.techport.tvremote.service.connection.preferredDevice
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -14,13 +15,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 data class WidgetModel(val tvName: String?) {
     val hasTv: Boolean get() = tvName != null
 }
-
-/**
- * The TV a widget or tile acts on: the one the app is on now, else the last selected one,
- * else the only saved one. Mirrors [com.techport.tvremote.service.connection.AutoConnector].
- */
-fun widgetTarget(state: ConnectionState, saved: List<TvDevice>, lastSelectedId: String?): TvDevice? =
-    state.device ?: saved.find { it.id == lastSelectedId } ?: saved.singleOrNull()
 
 /** Result of a widget press and the TV it was meant for (for the message shown). */
 data class WidgetKeyOutcome(val result: WidgetKeyResult, val device: TvDevice?)
@@ -57,7 +51,7 @@ class WidgetKeySender(
         val connected = when (val state = controller.state.value) {
             is ConnectionState.Connected -> state
             else -> {
-                val target = widgetTarget(state, devices.devices.first(), devices.lastSelectedId.first())
+                val target = preferredDevice(state, devices.devices.first(), devices.lastSelectedId.first())
                     ?: return WidgetKeyOutcome(WidgetKeyResult.NO_TV, null)
                 if (state is ConnectionState.PairingRequired && state.device.id == target.id) {
                     return WidgetKeyOutcome(WidgetKeyResult.NEEDS_PAIRING, target)

@@ -62,9 +62,6 @@ class ConnectionManager(
     private val _volume = MutableStateFlow<VolumeState?>(null)
     override val volume: StateFlow<VolumeState?> = _volume.asStateFlow()
 
-    private val _currentApp = MutableStateFlow<String?>(null)
-    override val currentApp: StateFlow<String?> = _currentApp.asStateFlow()
-
     private val _textField = MutableStateFlow<TvTextField?>(null)
     override val textField: StateFlow<TvTextField?> = _textField.asStateFlow()
 
@@ -124,7 +121,7 @@ class ConnectionManager(
         }
     }
 
-    /** Called when the device for [device] was forgotten; drops the session if it is ours. */
+    /** Called when the device [deviceId] was forgotten; drops the session if it is ours. */
     fun release(deviceId: String) {
         scope.launch {
             if (_state.value.device?.id == deviceId) {
@@ -264,7 +261,6 @@ class ConnectionManager(
                 val mirror = launch {
                     launch { opened.capabilities.collect { _state.value = ConnectionState.Connected(device, it) } }
                     launch { opened.volume.collect { _volume.value = it } }
-                    launch { opened.currentApp.collect { _currentApp.value = it } }
                     launch { opened.textField.collect { _textField.value = it } }
                 }
                 val reason = opened.awaitClosed() ?: RemoteError.CONNECTION_LOST
@@ -275,7 +271,6 @@ class ConnectionManager(
             session = null
             opened.close()
             _volume.value = null
-            _currentApp.value = null
             _textField.value = null
         }
     }

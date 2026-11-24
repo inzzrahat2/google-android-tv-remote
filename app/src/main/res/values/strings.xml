@@ -40,6 +40,8 @@
     <string name="error_unknown_body">Try reconnecting. If it keeps happening, restart the TV.</string>
 
     <!-- Common actions -->
+    <string name="action_done">Done</string>
+    <string name="action_open_settings">Open Settings</string>
     <string name="action_try_again">Try again</string>
     <string name="action_change_tv">Change TV</string>
     <string name="action_pair">Pair</string>
@@ -67,7 +69,6 @@
     <string name="remote_power_confirm_title">Send power?</string>
     <string name="remote_power_confirm_body">The TV may turn off. The app cannot confirm the TV\'s power state.</string>
     <string name="remote_power_confirm_action">Send</string>
-    <string name="remote_volume">Volume</string>
     <string name="remote_volume_percent">%1$d%%</string>
     <string name="remote_muted">Muted</string>
     <string name="remote_keyboard">Keyboard</string>
@@ -127,13 +128,8 @@
     <string name="pairing_wrong_code">That code didn\'t match. Check the TV and try again.</string>
     <string name="pairing_verifying">Verifying…</string>
     <string name="pairing_simulated_hint">Simulated TV shows: %1$s</string>
-    <string name="pairing_failed">Pairing failed</string>
-
-    <!-- Apps -->
-    <string name="apps_title">TV Apps</string>
 
     <!-- Settings -->
-    <string name="settings_title">Settings</string>
     <string name="settings_section_remote">Remote</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_connection">Connection</string>
@@ -179,8 +175,4 @@
     <string name="settings_send_on_enter">Press Enter on the TV after sending</string>
     <string name="settings_clipboard">Paste to TV</string>
     <string name="settings_clipboard_summary">Reads your clipboard only when you tap Paste. Nothing is stored or uploaded.</string>
-    <string name="action_done">Done</string>
-
-    <!-- Debug -->
-    <string name="debug_title">Remote debug</string>
 </resources>

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.widget.Toast
 import com.techport.tvremote.R
 import com.techport.tvremote.domain.model.RemoteKey
+import com.techport.tvremote.tvRemoteContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -25,14 +26,12 @@ class WidgetActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_KEY) return
         val key = intent.getStringExtra(EXTRA_KEY)?.let { name -> RemoteKey.entries.find { it.name == name } } ?: return
-        val app = context.applicationContext
-        val container = app.tvRemoteContainer
-        val lifecycle = app.connectionLifecycleOrNull
+        val container = context.tvRemoteContainer
         val sender = WidgetKeySender(
             controller = container.connectionManager,
             devices = container.deviceRepository,
-            connect = { device -> lifecycle?.connectForBackgroundUse(device) ?: container.connectionManager.connect(device) },
-            onUsed = { lifecycle?.noteBackgroundUse() },
+            connect = container.connectionLifecycle::connectForBackgroundUse,
+            onUsed = container.connectionLifecycle::noteBackgroundUse,
         )
         val pending = goAsync()
         container.appScope.launch {
@@ -46,7 +45,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     delay(FLUSH_MS)
                 } else {
                     container.logger.i(TAG, "Widget ${key.name}: ${outcome.result}")
-                    feedback(app, outcome)
+                    feedback(context.applicationContext, outcome)
                 }
             } finally {
                 pending.finish()
@@ -55,13 +54,13 @@ class WidgetActionReceiver : BroadcastReceiver() {
     }
 
     private suspend fun feedback(context: Context, outcome: WidgetKeyOutcome) {
-        val name = outcome.device?.name ?: context.getString(R.string.platform_widget_your_tv)
+        val name = outcome.device?.name ?: context.getString(R.string.widget_your_tv)
         val text = when (outcome.result) {
             WidgetKeyResult.SENT -> return
-            WidgetKeyResult.NO_TV -> context.getString(R.string.platform_widget_no_tv)
-            WidgetKeyResult.NEEDS_PAIRING -> context.getString(R.string.platform_widget_needs_pairing, name)
-            WidgetKeyResult.UNREACHABLE -> context.getString(R.string.platform_widget_unreachable, name)
-            WidgetKeyResult.UNSUPPORTED -> context.getString(R.string.platform_widget_unsupported, name)
+            WidgetKeyResult.NO_TV -> context.getString(R.string.widget_no_tv)
+            WidgetKeyResult.NEEDS_PAIRING -> context.getString(R.string.widget_needs_pairing, name)
+            WidgetKeyResult.UNREACHABLE -> context.getString(R.string.widget_unreachable, name)
+            WidgetKeyResult.UNSUPPORTED -> context.getString(R.string.widget_unsupported, name)
         }
         withContext(Dispatchers.Main) { Toast.makeText(context, text, Toast.LENGTH_SHORT).show() }
     }

@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -43,30 +44,29 @@ import com.techport.tvremote.AppContainer
 import com.techport.tvremote.BuildConfig
 import com.techport.tvremote.ui.apps.AppsScreen
 import com.techport.tvremote.ui.apps.AppsViewModel
-import com.techport.tvremote.ui.quickactions.QuickActionsEditor
 import com.techport.tvremote.ui.components.LocalPressFeedback
 import com.techport.tvremote.ui.debug.DebugScreen
 import com.techport.tvremote.ui.debug.DebugViewModel
 import com.techport.tvremote.ui.devices.DevicesScreen
 import com.techport.tvremote.ui.devices.DevicesViewModel
-import com.techport.tvremote.ui.navigation.AppsRoute
-import com.techport.tvremote.ui.navigation.DebugRoute
-import com.techport.tvremote.ui.navigation.DevicesRoute
-import com.techport.tvremote.ui.navigation.KeyboardRoute
 import com.techport.tvremote.ui.keyboard.KeyboardScreen
 import com.techport.tvremote.ui.keyboard.KeyboardViewModel
 import com.techport.tvremote.ui.keyboard.VoiceButton
 import com.techport.tvremote.ui.keyboard.VoiceViewModel
-import com.techport.tvremote.ui.onboarding.OnboardingScreen
-import com.techport.tvremote.domain.model.ConnectionState
-import kotlinx.coroutines.launch
+import com.techport.tvremote.ui.navigation.AppsRoute
+import com.techport.tvremote.ui.navigation.DebugRoute
+import com.techport.tvremote.ui.navigation.DevicesRoute
+import com.techport.tvremote.ui.navigation.KeyboardRoute
 import com.techport.tvremote.ui.navigation.RemoteRoute
 import com.techport.tvremote.ui.navigation.SettingsRoute
 import com.techport.tvremote.ui.navigation.TopLevelDestination
+import com.techport.tvremote.ui.onboarding.OnboardingScreen
+import com.techport.tvremote.ui.quickactions.QuickActionsEditor
 import com.techport.tvremote.ui.remote.RemoteScreen
 import com.techport.tvremote.ui.remote.RemoteViewModel
 import com.techport.tvremote.ui.settings.SettingsScreen
 import com.techport.tvremote.ui.settings.SettingsViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun TvRemoteRoot(container: AppContainer) {
@@ -147,8 +147,6 @@ private fun Destinations(nav: NavHostController, container: AppContainer, start:
         composable<KeyboardRoute> {
             val vm = viewModel { KeyboardViewModel(container.connectionManager, container.settings, container.clipboardReader) }
             val voiceVm = viewModel { VoiceViewModel(container.connectionManager, container.voiceRecorder) }
-            val state by container.connectionManager.state.collectAsStateWithLifecycle()
-            val voice = (state as? ConnectionState.Connected)?.capabilities?.voice == true
             KeyboardScreen(
                 vm,
                 onClose = { nav.popBackStack() },
@@ -157,11 +155,7 @@ private fun Destinations(nav: NavHostController, container: AppContainer, start:
                     nav.popBackStack()
                     nav.navigateTopLevel(TopLevelDestination.SETTINGS)
                 },
-                voiceButton = if (voice) {
-                    { VoiceButton(voiceVm) }
-                } else {
-                    null
-                },
+                voiceButton = { VoiceButton(voiceVm) },
             )
         }
         composable<AppsRoute> {
@@ -217,7 +211,7 @@ private fun BottomBar(nav: NavHostController) {
     val entry by nav.currentBackStackEntryAsState()
     NavigationBar {
         TopLevelDestination.entries.forEach { dest ->
-            val selected = entry?.destination?.hierarchy?.any { it.hasRoute(dest.route::class) } == true
+            val selected = entry.isOn(dest)
             NavigationBarItem(
                 selected = selected,
                 onClick = { nav.navigateTopLevel(dest) },
@@ -233,7 +227,7 @@ private fun Rail(nav: NavHostController) {
     val entry by nav.currentBackStackEntryAsState()
     NavigationRail {
         TopLevelDestination.entries.forEach { dest ->
-            val selected = entry?.destination?.hierarchy?.any { it.hasRoute(dest.route::class) } == true
+            val selected = entry.isOn(dest)
             NavigationRailItem(
                 selected = selected,
                 onClick = { nav.navigateTopLevel(dest) },
@@ -243,6 +237,9 @@ private fun Rail(nav: NavHostController) {
         }
     }
 }
+
+private fun NavBackStackEntry?.isOn(dest: TopLevelDestination): Boolean =
+    this?.destination?.hierarchy?.any { it.hasRoute(dest.route::class) } == true
 
 private fun NavHostController.navigateTopLevel(dest: TopLevelDestination) {
     navigate(dest.route) {

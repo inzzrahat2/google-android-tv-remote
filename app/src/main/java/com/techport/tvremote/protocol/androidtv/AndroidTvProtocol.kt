@@ -8,7 +8,6 @@ import com.techport.tvremote.domain.model.RemoteError
 import com.techport.tvremote.domain.model.RemoteException
 import com.techport.tvremote.domain.model.TvDevice
 import com.techport.tvremote.protocol.androidtv.wire.DeviceInfo
-import com.techport.tvremote.protocol.androidtv.wire.Feature
 import com.techport.tvremote.protocol.core.PairingSession
 import com.techport.tvremote.protocol.core.RemoteProtocol
 import com.techport.tvremote.protocol.core.RemoteSession
@@ -35,16 +34,9 @@ class AndroidTvProtocol internal constructor(
     connectTimeoutMs: Int,
 ) : RemoteProtocol {
 
-    /**
-     * @param enableIme request keyboard support. Some TVs then show "use the keyboard on your phone"
-     *   instead of their on-screen keyboard when a field is focused.
-     * @param enableVoice request voice support (the TV then answers KEYCODE_SEARCH with a voice session).
-     */
     constructor(
         context: Context,
         logger: AppLogger,
-        enableIme: Boolean = true,
-        enableVoice: Boolean = true,
         connectTimeoutMs: Int = DEFAULT_CONNECT_TIMEOUT_MS,
     ) : this(
         logger = logger,
@@ -60,9 +52,7 @@ class AndroidTvProtocol internal constructor(
             packageName = "atvremote",
             appVersion = "1.0.0",
         ),
-        requestedFeatures = AndroidTvSession.DEFAULT_FEATURES
-            .let { if (enableIme) it else it and Feature.IME.inv() }
-            .let { if (enableVoice) it else it and Feature.VOICE.inv() },
+        requestedFeatures = AndroidTvSession.DEFAULT_FEATURES,
         io = Dispatchers.IO,
         connectTimeoutMs = connectTimeoutMs,
     )
@@ -111,7 +101,7 @@ class AndroidTvProtocol internal constructor(
 
     /**
      * A target for a manually typed address. Throws [IllegalArgumentException] for an invalid host or
-     * port; check [HostValidation.normalize] first to validate as the user types.
+     * port.
      */
     fun manualTarget(host: String, port: Int = REMOTE_PORT): DiscoveredDevice {
         val normalized = HostValidation.normalize(host) ?: throw IllegalArgumentException("Invalid host")

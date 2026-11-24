@@ -139,7 +139,8 @@ class AndroidTvDiscovery(context: Context, private val logger: AppLogger) : Disc
 
     /**
      * Pre-API 34: NsdManager allows one pending resolve per *process*, so every discovery flow
-     * (the TVs screen and a reconnect's re-resolve may run together) shares one queue.
+     * (the TVs screen and a reconnect's re-resolve may run together) shares one queue. There is
+     * one AndroidTvDiscovery per process (see AndroidTvProtocol).
      */
     private val resolveQueue by lazy { ResolveQueue(appContext.getSystemService(NsdManager::class.java)) }
 

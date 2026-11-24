@@ -209,7 +209,6 @@ class ConnectionLifecycleTest {
 internal class FakeController : RemoteController {
     override val state = MutableStateFlow<ConnectionState>(ConnectionState.Idle)
     override val volume: StateFlow<VolumeState?> = MutableStateFlow(null)
-    override val currentApp: StateFlow<String?> = MutableStateFlow(null)
     override val textField: StateFlow<TvTextField?> = MutableStateFlow(null)
 
     val connects = mutableListOf<TvDevice>()

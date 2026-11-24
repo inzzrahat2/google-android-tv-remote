@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 interface RemoteController {
     val state: StateFlow<ConnectionState>
     val volume: StateFlow<VolumeState?>
-    val currentApp: StateFlow<String?>
     val textField: StateFlow<TvTextField?>
 
     fun connect(device: TvDevice)

@@ -6,33 +6,32 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +40,7 @@ import com.techport.tvremote.domain.model.HapticStrength
 import com.techport.tvremote.domain.model.RemoteKey
 import com.techport.tvremote.domain.model.RemoteLayout
 import com.techport.tvremote.domain.model.ThemeMode
+import com.techport.tvremote.ui.components.SectionHeader
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
@@ -49,7 +49,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     showDebug: Boolean,
     onOpenDebug: () -> Unit,
-    /** Supplied by the caller once the quick-actions editor is available; null hides the entry. */
+    /** Quick-actions editor dialog; null hides the entry (used by tests). */
     quickActionsEditor: (@Composable (onDismiss: () -> Unit) -> Unit)? = null,
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -68,7 +68,7 @@ fun SettingsScreen(
     if (editingQuickActions) quickActionsEditor?.invoke { editingQuickActions = false }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-        Section(R.string.settings_section_remote)
+        SectionHeader(R.string.settings_section_remote, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp))
         Choice(
             title = R.string.settings_haptics,
             options = HapticStrength.entries,
@@ -142,7 +142,7 @@ fun SettingsScreen(
             onSelect = { value -> viewModel.update { it.copy(remoteLayout = value) } },
         )
 
-        Section(R.string.settings_section_appearance)
+        SectionHeader(R.string.settings_section_appearance, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp))
         Choice(
             title = R.string.settings_theme,
             options = ThemeMode.entries,
@@ -163,7 +163,7 @@ fun SettingsScreen(
             }
         }
 
-        Section(R.string.settings_section_connection)
+        SectionHeader(R.string.settings_section_connection, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp))
         Toggle(R.string.settings_auto_reconnect, R.string.settings_auto_reconnect_summary, settings.autoReconnect) { v ->
             viewModel.update { it.copy(autoReconnect = v) }
         }
@@ -184,7 +184,7 @@ fun SettingsScreen(
             },
         )
 
-        Section(R.string.settings_section_keyboard)
+        SectionHeader(R.string.settings_section_keyboard, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp))
         Toggle(R.string.settings_auto_open_keyboard, R.string.settings_auto_open_keyboard_summary, settings.autoOpenKeyboard) { v ->
             viewModel.update { it.copy(autoOpenKeyboard = v) }
         }
@@ -193,7 +193,7 @@ fun SettingsScreen(
             viewModel.update { it.copy(clipboardEnabled = v) }
         }
 
-        Section(R.string.settings_section_privacy)
+        SectionHeader(R.string.settings_section_privacy, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp))
         Text(
             stringResource(R.string.settings_privacy_body),
             style = MaterialTheme.typography.bodyMedium,
@@ -202,7 +202,7 @@ fun SettingsScreen(
         )
 
         if (showDebug) {
-            Section(R.string.settings_section_developer)
+            SectionHeader(R.string.settings_section_developer, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp))
             ListItem(
                 headlineContent = { Text(stringResource(R.string.settings_debug)) },
                 modifier = Modifier.clickable(onClick = onOpenDebug),
@@ -214,16 +214,6 @@ fun SettingsScreen(
 private const val MIN_TIMEOUT_SEC = 10
 private const val MIN_REPEAT_MS = 60L
 private const val MAX_REPEAT_MS = 250L
-
-@Composable
-private fun Section(title: Int) {
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp).semantics { heading() },
-    )
-}
 
 @Composable
 private fun Toggle(title: Int, summary: Int?, checked: Boolean, onChange: (Boolean) -> Unit) {

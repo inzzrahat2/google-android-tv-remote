@@ -6,7 +6,7 @@ Legend: ✓ verified · ✗ not supported · ? untested
 
 | Device | OS | Discovery | Pairing | D-pad | Volume | Keyboard | Apps (links) | Voice | Power | Inputs | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| *(none yet)* | | | | | | | | | | | The Android TV adapter lands in Phase 3 |
+| *(none yet)* | | | | | | | | | | | Android TV adapter implemented; awaiting real-device results |
 
 ## Phone side
 - minSdk 26 (Android 8.0), targetSdk 37 (Android 17).

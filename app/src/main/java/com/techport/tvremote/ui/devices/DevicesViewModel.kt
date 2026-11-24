@@ -54,10 +54,10 @@ class DevicesViewModel(
 
     val needsLocalNetwork: Boolean = protocols.protocols.any { it.usesLocalNetwork }
 
-    /** Discovery runs only while this screen is visible (WhileSubscribed). */
     /** Bumped to rescan, e.g. once local network access is granted (a blocked scan never recovers). */
     private val scanKey = MutableStateFlow(0)
 
+    /** Discovery runs only while this screen is visible (WhileSubscribed). */
     @OptIn(ExperimentalCoroutinesApi::class)
     val nearby: StateFlow<NearbyUi> = scanKey.flatMapLatest {
         combine(

@@ -37,6 +37,8 @@ data class KeyboardUiState(
     /** The TV field's label (e.g. "Search YouTube"), when the TV reports one. */
     val fieldLabel: String? = null,
     val canMoveCursor: Boolean = false,
+    /** The connected TV accepts voice input. */
+    val voiceAvailable: Boolean = false,
     val sendOnEnter: Boolean = true,
     val clipboardEnabled: Boolean = false,
 ) {
@@ -215,6 +217,7 @@ class KeyboardViewModel(
                 availability = availability,
                 fieldLabel = field?.label?.takeIf { it.isNotBlank() },
                 canMoveCursor = availability == KeyboardAvailability.READY && caps?.dpad == true,
+                voiceAvailable = caps?.voice == true,
                 sendOnEnter = s.sendOnEnter,
                 clipboardEnabled = s.clipboardEnabled,
             )

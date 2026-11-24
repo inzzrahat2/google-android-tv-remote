@@ -28,7 +28,6 @@ import com.techport.tvremote.protocol.mock.MockTvProtocol
 import com.techport.tvremote.service.connection.AutoConnector
 import com.techport.tvremote.service.connection.ConnectionLifecycle
 import com.techport.tvremote.service.connection.ConnectionManager
-import com.techport.tvremote.widget.PlatformHost
 import com.techport.tvremote.widget.RemoteWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +42,7 @@ import kotlinx.coroutines.flow.stateIn
  * Hand-wired dependency graph. The graph is small enough that a DI framework would cost
  * more (build time, annotation processing) than it saves.
  */
-class AppContainer(context: Context) : PlatformHost {
+class AppContainer(context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -96,7 +95,7 @@ class AppContainer(context: Context) : PlatformHost {
 
     private val autoConnector = AutoConnector(deviceRepository, connectionManager)
 
-    override val connectionLifecycle = ConnectionLifecycle(
+    val connectionLifecycle = ConnectionLifecycle(
         controller = connectionManager,
         scope = appScope,
         networkStatus = networkMonitor.status,

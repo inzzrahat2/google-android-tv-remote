@@ -63,6 +63,7 @@ import com.techport.tvremote.R
 import com.techport.tvremote.data.apps.AppLinkSuggestion
 import com.techport.tvremote.domain.model.AppShortcut
 import com.techport.tvremote.ui.components.LocalPressFeedback
+import com.techport.tvremote.ui.components.SectionHeader
 
 /**
  * The app launcher. The protocol cannot list installed apps, so this manages user-saved app
@@ -140,7 +141,7 @@ fun AppsScreen(viewModel: AppsViewModel) {
         if (!searching && state.suggestions.isNotEmpty()) {
             fullWidth("suggestions-header") {
                 Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SectionTitle(R.string.apps_suggestions_title)
+                    SectionHeader(R.string.apps_suggestions_title)
                     Text(
                         stringResource(R.string.apps_suggestions_note),
                         style = MaterialTheme.typography.bodySmall,
@@ -208,21 +209,11 @@ private fun LazyGridScope.section(
 ) {
     if (shortcuts.isEmpty()) return
     fullWidth("$keyPrefix-header") {
-        Box(Modifier.padding(top = 12.dp)) { SectionTitle(title) }
+        Box(Modifier.padding(top = 12.dp)) { SectionHeader(title) }
     }
     items(shortcuts, key = { "$keyPrefix-${it.id}" }) { shortcut ->
         AppTile(shortcut, actions, movable)
     }
-}
-
-@Composable
-private fun SectionTitle(@StringRes title: Int) {
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.semantics { heading() },
-    )
 }
 
 @Composable

@@ -1,6 +1,8 @@
 package com.techport.tvremote.service.connection
 
 import com.techport.tvremote.domain.model.ConnectionState
+import com.techport.tvremote.domain.model.TvDevice
+import com.techport.tvremote.domain.model.device
 import com.techport.tvremote.domain.remote.RemoteController
 import com.techport.tvremote.domain.repository.DeviceRepository
 import kotlinx.coroutines.flow.first
@@ -15,9 +17,14 @@ class AutoConnector(
 ) {
     suspend fun connectPreferred() {
         if (controller.state.value != ConnectionState.Idle) return
-        val saved = devices.devices.first()
-        val lastId = devices.lastSelectedId.first()
-        val target = saved.find { it.id == lastId } ?: saved.singleOrNull() ?: return
+        val target = preferredDevice(ConnectionState.Idle, devices.devices.first(), devices.lastSelectedId.first()) ?: return
         controller.connect(target)
     }
 }
+
+/**
+ * The TV the app, a widget or the tile acts on: the one the app is on now, else the last
+ * selected one, else the only saved one.
+ */
+fun preferredDevice(state: ConnectionState, saved: List<TvDevice>, lastSelectedId: String?): TvDevice? =
+    state.device ?: saved.find { it.id == lastSelectedId } ?: saved.singleOrNull()

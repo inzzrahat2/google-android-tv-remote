@@ -114,20 +114,20 @@ fun OnboardingScreen(onFindTv: () -> Unit, onSkip: () -> Unit) {
                 }
                 Spacer(Modifier.height(28.dp))
                 Text(
-                    stringResource(R.string.platform_onboarding_title),
+                    stringResource(R.string.onboarding_title),
                     style = MaterialTheme.typography.headlineMedium,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.semantics { heading() },
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    stringResource(R.string.platform_onboarding_body),
+                    stringResource(R.string.onboarding_body),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(32.dp))
-                InfoRow(Icons.Rounded.Lock, stringResource(R.string.platform_onboarding_privacy))
+                InfoRow(Icons.Rounded.Lock, stringResource(R.string.onboarding_privacy))
                 if (needsPermission && !granted) {
                     Spacer(Modifier.height(16.dp))
                     PermissionCard(denied = denied, permanentlyDenied = permanentlyDenied)
@@ -146,27 +146,27 @@ fun OnboardingScreen(onFindTv: () -> Unit, onSkip: () -> Unit) {
                         Button(
                             onClick = { context.openAppSettings() },
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                        ) { Text(stringResource(R.string.platform_onboarding_open_settings)) }
+                        ) { Text(stringResource(R.string.action_open_settings)) }
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = onFindTv, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                            Text(stringResource(R.string.platform_onboarding_continue_anyway))
+                            Text(stringResource(R.string.onboarding_continue_anyway))
                         }
                     }
                     else -> {
                         Button(
                             onClick = { launcher.launch(LocalNetworkPermission.PERMISSION) },
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                        ) { Text(stringResource(R.string.platform_onboarding_allow_and_find)) }
+                        ) { Text(stringResource(R.string.onboarding_allow_and_find)) }
                         if (denied) {
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(onClick = onFindTv, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                                Text(stringResource(R.string.platform_onboarding_continue_anyway))
+                                Text(stringResource(R.string.onboarding_continue_anyway))
                             }
                         }
                     }
                 }
                 TextButton(onClick = onSkip, modifier = Modifier.padding(top = 4.dp)) {
-                    Text(stringResource(R.string.platform_onboarding_skip))
+                    Text(stringResource(R.string.onboarding_skip))
                 }
             }
         }
@@ -192,14 +192,14 @@ private fun PermissionCard(denied: Boolean, permanentlyDenied: Boolean) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Wifi, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.platform_onboarding_permission_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.onboarding_permission_title), style = MaterialTheme.typography.titleMedium)
             }
             Text(
                 stringResource(
                     when {
-                        permanentlyDenied -> R.string.platform_onboarding_permission_blocked
-                        denied -> R.string.platform_onboarding_permission_denied
-                        else -> R.string.platform_onboarding_permission_body
+                        permanentlyDenied -> R.string.onboarding_permission_blocked
+                        denied -> R.string.onboarding_permission_denied
+                        else -> R.string.onboarding_permission_body
                     },
                 ),
                 style = MaterialTheme.typography.bodyMedium,

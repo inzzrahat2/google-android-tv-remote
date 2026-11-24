@@ -11,6 +11,7 @@ import com.techport.tvremote.R
 import com.techport.tvremote.core.connectivity.NetworkStatus
 import com.techport.tvremote.domain.model.RemoteCommand
 import com.techport.tvremote.domain.model.RemoteKey
+import com.techport.tvremote.domain.model.ThemeMode
 import com.techport.tvremote.testing.InMemoryAppShortcutRepository
 import com.techport.tvremote.testing.InMemorySettingsRepository
 import com.techport.tvremote.testing.MockTvHarness
@@ -20,7 +21,6 @@ import com.techport.tvremote.testing.waitFor
 import com.techport.tvremote.ui.remote.RemoteScreen
 import com.techport.tvremote.ui.remote.RemoteViewModel
 import com.techport.tvremote.ui.theme.TvRemoteTheme
-import com.techport.tvremote.domain.model.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking

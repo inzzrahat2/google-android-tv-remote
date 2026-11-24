@@ -6,16 +6,16 @@ import com.techport.tvremote.core.voice.VoiceOutcome
 import com.techport.tvremote.core.voice.VoiceRecorder
 import com.techport.tvremote.domain.model.RemoteException
 import com.techport.tvremote.domain.remote.RemoteController
-import java.util.concurrent.atomic.AtomicBoolean
 import com.techport.tvremote.protocol.core.VoiceSession
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.NonCancellable
 
 enum class VoicePhase {
     IDLE,
@@ -85,11 +85,6 @@ class VoiceViewModel(
         if (_state.value.phase == VoicePhase.LISTENING || _state.value.phase == VoicePhase.STARTING) {
             _state.value = _state.value.copy(phase = VoicePhase.FINISHING, handsFree = false)
         }
-    }
-
-    /** Releases the microphone immediately (screen left, app backgrounded). */
-    fun cancel() {
-        job?.cancel()
     }
 
     fun onPermissionDenied() {

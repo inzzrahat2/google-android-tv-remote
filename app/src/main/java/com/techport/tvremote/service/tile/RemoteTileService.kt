@@ -8,8 +8,8 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.techport.tvremote.MainActivity
 import com.techport.tvremote.R
-import com.techport.tvremote.TvRemoteApp
 import com.techport.tvremote.domain.model.ConnectionState
+import com.techport.tvremote.tvRemoteContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
-/** What the tile shows for a connection state. Pure so it can be tested. */
+/** What the tile shows for a connection state. */
 data class TileModel(val active: Boolean, val subtitle: TileSubtitle, val deviceName: String?)
 
 enum class TileSubtitle { CONNECTED, CONNECTING, NOT_CONNECTED, NO_TV }
@@ -42,7 +42,7 @@ class RemoteTileService : TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
-        val state = (applicationContext as TvRemoteApp).container.connectionManager.state
+        val state = tvRemoteContainer.connectionManager.state
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         listening?.cancel()
         listening = scope
@@ -69,16 +69,16 @@ class RemoteTileService : TileService() {
     private fun render(model: TileModel) {
         val tile = qsTile ?: return
         tile.state = if (model.active) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.label = getString(R.string.platform_tile_label)
+        tile.label = getString(R.string.tile_label)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.subtitle = when (model.subtitle) {
                 TileSubtitle.CONNECTED -> model.deviceName
                 TileSubtitle.CONNECTING -> getString(R.string.state_connecting)
-                TileSubtitle.NOT_CONNECTED -> getString(R.string.platform_tile_not_connected)
+                TileSubtitle.NOT_CONNECTED -> getString(R.string.tile_not_connected)
                 TileSubtitle.NO_TV -> null
             }
         }
-        tile.contentDescription = getString(R.string.platform_tile_label)
+        tile.contentDescription = getString(R.string.tile_label)
         tile.updateTile()
     }
 

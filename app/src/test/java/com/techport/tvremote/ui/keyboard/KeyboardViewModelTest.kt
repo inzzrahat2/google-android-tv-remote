@@ -34,7 +34,6 @@ internal class FakeRemoteController(connected: Boolean = true, keyboard: Boolean
         if (connected) ConnectionState.Connected(device, caps) else ConnectionState.Idle,
     )
     override val volume = MutableStateFlow<VolumeState?>(null)
-    override val currentApp = MutableStateFlow<String?>(null)
     override val textField = MutableStateFlow<TvTextField?>(null)
     val sent = mutableListOf<String>()
     var voice: VoiceSession? = null

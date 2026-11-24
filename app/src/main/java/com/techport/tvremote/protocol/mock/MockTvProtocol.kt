@@ -153,8 +153,7 @@ class MockTvSession(
     private val latencyMs: Long,
     capabilities: RemoteCapabilities,
 ) : RemoteSession {
-    private val _capabilities = MutableStateFlow(capabilities)
-    override val capabilities: StateFlow<RemoteCapabilities> = _capabilities.asStateFlow()
+    override val capabilities: StateFlow<RemoteCapabilities> = MutableStateFlow(capabilities)
 
     private val _volume = MutableStateFlow<VolumeState?>(VolumeState(level = 30, max = 100, muted = false))
     override val volume: StateFlow<VolumeState?> = _volume.asStateFlow()
@@ -167,18 +166,10 @@ class MockTvSession(
 
     private val closed = CompletableDeferred<RemoteError?>()
 
-    private val _voiceBytes = MutableStateFlow(0)
-
-    /** Total voice bytes received across sessions, for tests. */
-    val voiceBytes: StateFlow<Int> = _voiceBytes.asStateFlow()
-
     private val _received = MutableStateFlow<List<RemoteCommand>>(emptyList())
 
     /** Commands the simulated TV received, newest last. */
     val received: StateFlow<List<RemoteCommand>> = _received.asStateFlow()
-
-    var isOn: Boolean = true
-        private set
 
     override suspend fun execute(command: RemoteCommand) {
         if (closed.isCompleted) throw RemoteException(RemoteError.CONNECTION_LOST)
@@ -201,25 +192,17 @@ class MockTvSession(
                 else -> v
             }
         }
-        if (key == RemoteKey.POWER) isOn = !isOn
         if (key == RemoteKey.HOME) _currentApp.value = "com.google.android.tvlauncher"
         if (key == RemoteKey.SEARCH) _textField.value = TvTextField("", "Search")
         if (key == RemoteKey.DEL) _textField.update { f -> f?.copy(value = f.value.dropLastCodePoint()) }
         if (key == RemoteKey.BACK) _textField.value = null
     }
 
-    /** Simulates the TV focusing a text field (as if the user opened a search box). */
-    fun focusTextField(label: String = "Search") {
-        _textField.value = TvTextField("", label)
-    }
-
     override suspend fun startVoice(): VoiceSession? {
         if (!capabilities.value.voice || closed.isCompleted) return null
         delay(latencyMs)
         return object : VoiceSession {
-            override suspend fun send(pcm: ByteArray) {
-                _voiceBytes.update { it + pcm.size }
-            }
+            override suspend fun send(pcm: ByteArray) = Unit
 
             override suspend fun end() = Unit
         }

@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val container = (application as TvRemoteApp).container
+        val container = tvRemoteContainer
         setContent {
             val settings by container.settings.collectAsStateWithLifecycle()
             TvRemoteTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {

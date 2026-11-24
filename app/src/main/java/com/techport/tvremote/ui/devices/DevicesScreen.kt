@@ -17,12 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material.icons.rounded.Tv
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -51,8 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -65,6 +63,7 @@ import com.techport.tvremote.domain.model.ConnectionState
 import com.techport.tvremote.domain.model.DiscoveredDevice
 import com.techport.tvremote.domain.model.TvDevice
 import com.techport.tvremote.domain.model.device
+import com.techport.tvremote.ui.components.SectionHeader
 import com.techport.tvremote.ui.components.StatusDot
 import com.techport.tvremote.ui.components.labelRes
 
@@ -114,7 +113,7 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), modifier = Modifier.fillMaxSize()) {
-            item { SectionTitle(R.string.devices_title) }
+            item { SectionHeader(R.string.devices_title, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)) }
 
             if (viewModel.needsLocalNetwork && !permissionGranted) {
                 item {
@@ -159,7 +158,7 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
                 )
             }
 
-            item { SectionTitle(R.string.devices_nearby) }
+            item { SectionHeader(R.string.devices_nearby, Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)) }
             items(nearby.devices, key = { "nearby-" + it.id }) { device ->
                 NearbyDeviceRow(device, onPair = { viewModel.pair(device) })
             }
@@ -223,16 +222,6 @@ fun DevicesScreen(viewModel: DevicesViewModel, onOpenRemote: () -> Unit) {
 }
 
 @Composable
-private fun SectionTitle(res: Int) {
-    Text(
-        stringResource(res),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
-    )
-}
-
-@Composable
 private fun PermissionCard(permanentlyDenied: Boolean, onAllow: () -> Unit, onOpenSettings: () -> Unit) {
     Card(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -242,7 +231,7 @@ private fun PermissionCard(permanentlyDenied: Boolean, onAllow: () -> Unit, onOp
             Text(stringResource(R.string.error_permission_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.error_permission_body), style = MaterialTheme.typography.bodyMedium)
             if (permanentlyDenied) {
-                Button(onClick = onOpenSettings) { Text(stringResource(R.string.platform_onboarding_open_settings)) }
+                Button(onClick = onOpenSettings) { Text(stringResource(R.string.action_open_settings)) }
             } else {
                 Button(onClick = onAllow) { Text(stringResource(R.string.action_allow)) }
             }

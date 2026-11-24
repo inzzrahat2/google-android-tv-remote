@@ -82,8 +82,8 @@ import com.techport.tvremote.ui.components.LocalPressFeedback
  * with a toolbar for the keys an IME doesn't have (arrows, Esc, Enter, Paste to TV, Clear).
  *
  * @param onOpenSettings shown as the snackbar action when Paste to TV is turned off; null hides it.
- * @param voiceButton optional slot in the top bar, e.g. `{ VoiceButton(voiceVm) }`; pass it
- *   only when the connected TV has the voice capability.
+ * @param voiceButton hold-to-talk button for the top bar, e.g. `{ VoiceButton(voiceVm) }`;
+ *   rendered only when the connected TV supports voice.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,7 +145,7 @@ fun KeyboardScreen(
                         overflow = TextOverflow.Ellipsis,
                     )
                 },
-                actions = { if (voiceButton != null && ui.enabled) voiceButton() },
+                actions = { if (voiceButton != null && ui.enabled && ui.voiceAvailable) voiceButton() },
             )
         },
     ) { padding ->

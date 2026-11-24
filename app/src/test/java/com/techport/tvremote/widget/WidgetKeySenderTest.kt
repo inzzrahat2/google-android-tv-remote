@@ -8,6 +8,7 @@ import com.techport.tvremote.domain.model.RemoteKey
 import com.techport.tvremote.domain.model.TvDevice
 import com.techport.tvremote.domain.repository.DeviceRepository
 import com.techport.tvremote.service.connection.FakeController
+import com.techport.tvremote.service.connection.preferredDevice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -120,11 +121,11 @@ class WidgetKeySenderTest {
 
     @Test
     fun targetPrefersCurrentThenLastThenOnly() {
-        assertEquals(bedroom, widgetTarget(ConnectionState.Connecting(bedroom), listOf(living, bedroom), "tv1"))
-        assertEquals(living, widgetTarget(ConnectionState.Idle, listOf(living, bedroom), "tv1"))
-        assertEquals(living, widgetTarget(ConnectionState.Idle, listOf(living), null))
-        assertNull(widgetTarget(ConnectionState.Idle, listOf(living, bedroom), null))
-        assertNull(widgetTarget(ConnectionState.Idle, emptyList(), "tv1"))
+        assertEquals(bedroom, preferredDevice(ConnectionState.Connecting(bedroom), listOf(living, bedroom), "tv1"))
+        assertEquals(living, preferredDevice(ConnectionState.Idle, listOf(living, bedroom), "tv1"))
+        assertEquals(living, preferredDevice(ConnectionState.Idle, listOf(living), null))
+        assertNull(preferredDevice(ConnectionState.Idle, listOf(living, bedroom), null))
+        assertNull(preferredDevice(ConnectionState.Idle, emptyList(), "tv1"))
     }
 }
 

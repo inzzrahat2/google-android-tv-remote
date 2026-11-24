@@ -11,6 +11,8 @@ import android.widget.RemoteViews
 import com.techport.tvremote.MainActivity
 import com.techport.tvremote.R
 import com.techport.tvremote.domain.model.RemoteKey
+import com.techport.tvremote.service.connection.preferredDevice
+import com.techport.tvremote.tvRemoteContainer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -56,7 +58,7 @@ object RemoteWidgets {
             val openApp = openAppIntent(context)
             setTextViewText(R.id.widget_title, model.tvName ?: context.getString(R.string.app_name))
             // The subtitle only appears while there is nothing to control yet.
-            setTextViewText(R.id.widget_subtitle, context.getString(R.string.platform_widget_set_up))
+            setTextViewText(R.id.widget_subtitle, context.getString(R.string.widget_set_up))
             setViewVisibility(R.id.widget_subtitle, if (model.hasTv) View.GONE else View.VISIBLE)
             setOnClickPendingIntent(R.id.widget_header, openApp)
             kind.buttons.forEach { (viewId, key) ->
@@ -110,7 +112,7 @@ abstract class RemoteWidgetProvider(private val kind: RemoteWidgetKind) : AppWid
             try {
                 val state = container.connectionManager.state.value
                 val devices = container.deviceRepository
-                val target = widgetTarget(state, devices.devices.first(), devices.lastSelectedId.first())
+                val target = preferredDevice(state, devices.devices.first(), devices.lastSelectedId.first())
                 manager.updateAppWidget(appWidgetIds, RemoteWidgets.render(context, kind, WidgetModel(target?.name)))
             } finally {
                 pending.finish()
