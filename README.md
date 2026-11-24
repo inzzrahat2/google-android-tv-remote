@@ -138,3 +138,9 @@ Project layout (`app/src/main/java/com/techport/tvremote/`):
 
 Built with Kotlin, Jetpack Compose, Material 3, coroutines and DataStore. Dependencies are kept
 to AndroidX and kotlinx; there is no networking or protobuf library.
+
+## License
+
+Copyright 2026 inzzrahat2
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for the full text.
